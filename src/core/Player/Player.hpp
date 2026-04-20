@@ -64,6 +64,8 @@ public:
     Card* removeCardAt(int pos);
     void setStatus(std::string newStatus);
     std::string getStatus() const {return status;}
+    std::string getId() const{return id;}
+
     };
 
 #endif

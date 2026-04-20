@@ -1,71 +1,66 @@
-#include "include\models\GameState.hpp"
+#include "../../core/GameState/GameState.hpp"
 
-GameState(int currTurn, int maxTurn, int activePlayerIdx, std::vector<std::shared_ptr<Player>> turnOrder, std::vector<std::shared_ptr<Player>> players, std::unique_ptr<Board> board, std::unique_ptr<CardDeck> chanceDeck, std::unique_ptr<CardDeck> communityChestDeck)
-        : {}
+// Constructor
+GameState::GameState()
+    : currTurn(0), maxTurn(0), activePlayerIdx(0) {}
 
-int GameState::getCurrTurn() const
-{
-    return this.currTurn;
+// ── Turn ─────────────────────────────────────────────────────────────────────
+int GameState::getCurrTurn() const {
+    return currTurn;
+}
+void GameState::setCurrTurn(int turn) {
+    currTurn = turn;
 }
 
-void GameState::setCurrTurn(int turn){
-    this.currTurn = turn;
+int GameState::getMaxTurn() const {
+    return maxTurn;
+}
+void GameState::setMaxTurn(int max) {
+    maxTurn = max;
 }
 
-int GameState::getMaxTurn() const
-{
-    return this.maxTurn;
-}
-void GameState::setMaxTurn(int max)
-{
-    this.maxTurn = max;
+// ── Players ───────────────────────────────────────────────────────────────────
+Player* GameState::getPlayer() const {
+    if (players.empty()) return nullptr;
+    return players.front().get();
 }
 
-Player* GameState::getPlayer() const
-{
-    return this.players.front;
-}
-
-Player* GameState::getPlaterByid(int id) const
-{
-    auto it = this.players.begin()
-    while(it != this.players.end()){
-        // nnti yh kena squiggle hehe
+Player* GameState::getPlayerById(string id) const {
+    for (auto& p : players) {
+        if (p->getId() == id) return p.get();
     }
+    return nullptr;
 }
 
-const std::vector<std::shared_ptr<Player>>& getPlayers() const
-{
-    return this.players;
+const std::vector<std::shared_ptr<Player>>& GameState::getPlayers() const {
+    return players;
 }
 
-Board* GameState::getGameBoard() const
-{
-    return this.board;
+// ── Active player ─────────────────────────────────────────────────────────────
+int GameState::getActivePlayerIdx() const {
+    return activePlayerIdx;
+}
+void GameState::setActivePlayerIdx(int idx) {
+    activePlayerIdx = idx;
 }
 
-CardDeck* GameState::getChanceDeck() const
-{
-
+// ── Turn order ────────────────────────────────────────────────────────────────
+const std::vector<std::shared_ptr<Player>>& GameState::getTurnOrder() const {
+    return turnOrder;
 }
-CardDeck* GameState::getCommunityChestDeck() const
-{
-
-}
-
-int GameState::getActivePlayerIdx() const
-{
-    return this.activePlayerIdx;
-}
-void GameState::setActivePlayerIdx(int idx)
-{
-    this.activePlayerIdx = idx;
+void GameState::setTurnOrder(const std::vector<std::shared_ptr<Player>>& order) {
+    turnOrder = order;
 }
 
-const GameState::std::vector<std::shared_ptr<Player>>& getTurnOrder() const { return turnOrder; }
-int GameState::getActivePlayerIdx() const { return activePlayerIdx; }
+// ── Board ─────────────────────────────────────────────────────────────────────
+Board* GameState::getGameBoard() const {
+    return board.get();
+}
 
-void GameState::setTurnOrder(const std::vector<std::shared_ptr<Player>>& order) { turnOrder = order; }
-void GameState::setActivePlayerIdx(int idx) { activePlayerIdx = idx; }
-
-
+// ── Card decks ────────────────────────────────────────────────────────────────
+CardDeck* GameState::getChanceDeck() const {
+    return chanceDeck.get();
+}
+CardDeck* GameState::getCommunityChestDeck() const {
+    return communityChestDeck.get();
+}

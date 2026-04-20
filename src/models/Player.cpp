@@ -45,4 +45,3 @@ void Player::setStatus(std::string newStatus)
 {
     status = newStatus;
 }
-
