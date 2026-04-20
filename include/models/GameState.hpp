@@ -6,7 +6,7 @@
 #include <memory>
 #include "models/Player.hpp"     // Jordan
 #include "models/Board.hpp"      // Yavie/Hakam
-#include "models/CardDeck.hpp"   // Arin
+#include "src\core\Card\CardDeck.hpp"   // Arin
 
 class GameState {
 private:
@@ -21,7 +21,15 @@ private:
     std::unique_ptr<CardDeck> communityChestDeck;   // Tumpukan kartu Dana Umum
 
 public:
-    GameState();
+    GameState(int currTurn,
+                int maxTurn,
+                int activePlayerIdx,
+                std::vector<std::shared_ptr<Player>> turnOrder,
+                std::vector<std::shared_ptr<Player>> players,
+                std::unique_ptr<Board> board,
+                std::unique_ptr<CardDeck> chanceDeck,
+                std::unique_ptr<CardDeck> communityChestDeck
+            );
     
     // Getter & Setter untuk Save/Load 
     int getCurrTurn() const;
