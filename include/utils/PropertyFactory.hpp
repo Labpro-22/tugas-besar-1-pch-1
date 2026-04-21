@@ -6,10 +6,10 @@
 #include <map>
 
 #include "utils/ConfigLoader.hpp"
-#include "core/Property/Property.hpp"
-#include "core/Property/StreetProperty.hpp"
-#include "core/Property/RailroadProperty.hpp"
-#include "core/Property/UtilityProperty.hpp"
+#include "../src/core/Property/Property.hpp"
+#include "../src/core/Property/StreetProperty.hpp"
+#include "../src/core/Property/RailroadProperty.hpp"
+#include "../src/core/Property/UtilityProperty.hpp"
 
 using namespace std;
 
