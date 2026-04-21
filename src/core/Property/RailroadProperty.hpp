@@ -15,8 +15,10 @@ public:
     RailroadProperty(const string &id, const string &code, const string &name, const string &colorGroup, double purchasePrice, double mortageValue, PropertyStatus status, const string &ownerId, map<int, int> rentFactor);
     ~RailroadProperty();
 
-    double calculateRentPrice();
-    double calculateSellPrice();
+    int calculateRentPrice(int diceRoll,
+                           int ownerSameColorCount,
+                           bool monopoly) const override;
+    int calculateSellPrice() const override;
     void formattingTXT() const override;
     friend ostream &operator<<(ostream &os, const RailroadProperty &p);
 };

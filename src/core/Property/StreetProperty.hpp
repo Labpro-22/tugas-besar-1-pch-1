@@ -17,23 +17,27 @@ private:
 
 public:
     StreetProperty();
-    StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, double purchasePrice, double mortageValue, PropertyStatus status, const string &ownerId, double houseUpgCost, double hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration);
+    StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, PropertyStatus status, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration);
     ~StreetProperty();
 
-    double getHouseUpgCost();
-    double getHotelUpgCost();
-    int getBuildingCount();
-    bool gethasHotel();
-    int getFestivalMultiplier();
-    int getFestivalDuration();
+    int getHouseUpgCost() const;
+    int getHotelUpgCost() const;
+    int getBuildingCount() const;
+    bool gethasHotel() const;
+    int getFestivalMultiplier() const;
+    int getFestivalDuration() const;
     void setFestivalMultiplier(int multiplier);
     void setFestivalDuration(int duration);
     void buildHouse();
     void upgToHotel();
-    double sellAllBuildings();
+    int sellAllBuildings();
     void resetFestival();
-    double calculateSellPrice();
-    double calculateRentPrice();
+    int StreetProperty::computeBaseRent(bool monopoly) const;
+    int applyFestivalMultiplier(int rent) const;
+    int calculateRentPrice(int diceRoll,
+                           int ownerSameColorCount,
+                           bool monopoly) const override;
+    int calculateSellPrice() const override;
     friend ostream &operator<<(ostream &os, const StreetProperty &p);
 };
 
