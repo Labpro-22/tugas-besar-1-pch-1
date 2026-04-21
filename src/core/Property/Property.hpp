@@ -27,7 +27,7 @@ private:
 
 public:
     Property();
-    Property(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, PropertyStatus status, const string &ownerId);
+    Property(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId);
     virtual ~Property();
     string getId() const;
     string getCode() const;
@@ -44,7 +44,7 @@ public:
                                    int ownerSameColorCount,
                                    bool monopoly) const = 0;
     virtual int calculateSellPrice() const = 0;
-    virtual void formattingTXT() const = 0;
+    virtual string formattingTXT() const = 0;
     friend ostream &operator<<(ostream &os, const Property &p);
 };
 

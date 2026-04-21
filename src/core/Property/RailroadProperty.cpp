@@ -4,7 +4,7 @@ RailroadProperty::RailroadProperty()
 {
 }
 
-RailroadProperty::RailroadProperty(const string &id, const string &code, const string &name, const string &colorGroup, double purchasePrice, double mortageValue, PropertyStatus status, const string &ownerId, map<int, int> rentFactor) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, status, ownerId), rentFactor(rentFactor)
+RailroadProperty::RailroadProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, map<int, int> rentFactor) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, ownerId), rentFactor(rentFactor)
 {
 }
 
@@ -39,4 +39,25 @@ ostream &operator<<(ostream &os, const RailroadProperty &p)
     else
         os << "OWNED";
     return os;
+}
+
+string RailroadProperty::formattingTXT() const
+{
+    string statusStr;
+    switch (getStatus())
+    {
+    case PropertyStatus::BANK:
+        statusStr = "BANK";
+        break;
+    case PropertyStatus::OWNED:
+        statusStr = "OWNED";
+        break;
+    case PropertyStatus::MORTGAGED:
+        statusStr = "MORTGAGED";
+        break;
+    }
+
+    string ownerStr = getOwnerId().empty() ? "BANK" : getOwnerId();
+
+    return getCode() + " RAILROAD " + ownerStr + " " + statusStr + " 1 0 0";
 }

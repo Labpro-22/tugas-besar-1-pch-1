@@ -4,7 +4,7 @@ UtilityProperty::UtilityProperty()
 {
 }
 
-UtilityProperty::UtilityProperty(const string &id, const string &code, const string &name, const string &colorGroup, double purchasePrice, double mortageValue, PropertyStatus status, const string &ownerId, map<int, int> rentPrice) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, status, ownerId), rentPrice(rentPrice)
+UtilityProperty::UtilityProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, map<int, int> rentPrice) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, ownerId), rentPrice(rentPrice)
 {
 }
 
@@ -40,4 +40,25 @@ ostream &operator<<(ostream &os, const UtilityProperty &p)
         os << "OWNED";
 
     return os;
+}
+
+string UtilityProperty::formattingTXT() const
+{
+    string statusStr;
+    switch (getStatus())
+    {
+    case PropertyStatus::BANK:
+        statusStr = "BANK";
+        break;
+    case PropertyStatus::OWNED:
+        statusStr = "OWNED";
+        break;
+    case PropertyStatus::MORTGAGED:
+        statusStr = "MORTGAGED";
+        break;
+    }
+
+    string ownerStr = getOwnerId().empty() ? "BANK" : getOwnerId();
+
+    return getCode() + " UTILITY " + ownerStr + " " + statusStr + " 1 0 0";
 }

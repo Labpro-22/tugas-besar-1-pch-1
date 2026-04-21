@@ -13,14 +13,14 @@ private:
 
 public:
     UtilityProperty();
-    UtilityProperty(const string &id, const string &code, const string &name, const string &colorGroup, double purchasePrice, double mortageValue, PropertyStatus status, const string &ownerId, map<int, int> rentPrice);
+    UtilityProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, map<int, int> rentPrice);
     ~UtilityProperty();
 
     int calculateRentPrice(int diceRoll,
                            int ownerSameColorCount,
                            bool monopoly) const override;
     int calculateSellPrice() const override;
-    void formattingTXT() const override;
+    string formattingTXT() const override;
     friend ostream &operator<<(ostream &os, const UtilityProperty &p);
 };
 

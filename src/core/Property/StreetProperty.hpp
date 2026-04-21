@@ -7,17 +7,22 @@
 class StreetProperty : public Property
 {
 private:
-    double houseUpgCost;
-    double hotelUpgCost;
+    int houseUpgCost;
+    int hotelUpgCost;
     map<int, int> rentPrice;
     int buildingCount;
     bool hasHotel;
     int festivalMultiplier;
     int festivalDuration;
+    static constexpr int MAX_HOUSES = 4;
+    static constexpr int MAX_FESTIVAL_MULTIPLIER = 8;
+    static constexpr int FESTIVAL_DURATION = 3;
+    int computeBaseRent(bool monopoly) const;
+    int applyFestivalMultiplier(int rent) const;
 
 public:
     StreetProperty();
-    StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, PropertyStatus status, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration);
+    StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration);
     ~StreetProperty();
 
     int getHouseUpgCost() const;
@@ -32,12 +37,13 @@ public:
     void upgToHotel();
     int sellAllBuildings();
     void resetFestival();
-    int StreetProperty::computeBaseRent(bool monopoly) const;
-    int applyFestivalMultiplier(int rent) const;
+    void activateFestival(int newMultiplier);
+    void decrementFestivalDuration();
     int calculateRentPrice(int diceRoll,
                            int ownerSameColorCount,
                            bool monopoly) const override;
     int calculateSellPrice() const override;
+    string formattingTXT() const override;
     friend ostream &operator<<(ostream &os, const StreetProperty &p);
 };
 

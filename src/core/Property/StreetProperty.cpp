@@ -4,7 +4,7 @@ StreetProperty::StreetProperty()
 {
 }
 
-StreetProperty::StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, PropertyStatus status, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, status, ownerId), houseUpgCost(houseUpgCost), hotelUpgCost(hotelUpgCost), rentPrice(rentPrice), buildingCount(buildingCount), hasHotel(hasHotel), festivalMultiplier(festivalMultiplier), festivalDuration(festivalDuration)
+StreetProperty::StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, ownerId), houseUpgCost(houseUpgCost), hotelUpgCost(hotelUpgCost), rentPrice(rentPrice), buildingCount(buildingCount), hasHotel(hasHotel), festivalMultiplier(festivalMultiplier), festivalDuration(festivalDuration)
 {
 }
 
@@ -91,6 +91,27 @@ void StreetProperty::resetFestival()
     festivalDuration = 0;
 }
 
+void StreetProperty::activateFestival(int newMultiplier)
+{
+    if (newMultiplier <= MAX_FESTIVAL_MULTIPLIER)
+    {
+        festivalMultiplier = newMultiplier;
+    }
+    festivalDuration = FESTIVAL_DURATION;
+}
+
+void StreetProperty::decrementFestivalDuration()
+{
+    if (festivalDuration > 0)
+    {
+        festivalDuration--;
+        if (festivalDuration == 0)
+        {
+            festivalMultiplier = 1;
+        }
+    }
+}
+
 int StreetProperty::computeBaseRent(bool monopoly) const
 {
     if (hasHotel)
@@ -150,4 +171,31 @@ ostream &operator<<(ostream &os, const StreetProperty &p)
         os << "OWNED";
 
     return os;
+}
+
+string StreetProperty::formattingTXT() const
+{
+    string statusStr;
+    switch (getStatus())
+    {
+    case PropertyStatus::BANK:
+        statusStr = "BANK";
+        break;
+    case PropertyStatus::OWNED:
+        statusStr = "OWNED";
+        break;
+    case PropertyStatus::MORTGAGED:
+        statusStr = "MORTGAGED";
+        break;
+    }
+
+    string ownerStr = getOwnerId().empty() ? "BANK" : getOwnerId();
+    string bangunanStr = hasHotel ? "H" : to_string(buildingCount);
+
+    return getCode() + " street " +
+           ownerStr + " " +
+           statusStr + " " +
+           to_string(festivalMultiplier) + " " +
+           to_string(festivalDuration) + " " +
+           bangunanStr;
 }
