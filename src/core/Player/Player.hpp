@@ -5,67 +5,135 @@
 #include <string>
 #include <memory>
 #include "../Card/Card.hpp"
+#include "../Card/SkillCard.hpp"
+#include "../Card/ShieldCard.hpp"
 #include "../Property/Property.hpp"
 #include "../Board/Board.hpp"
 
-class Player {
-private: 
-    std::string id;
-    int money;
-    Tile* currPetak; // nanti ganti
-    std::vector<Property*> listProperty;
-    std::vector<Card*> listCard;
-    std::string status;
-public: 
-/**
-+ Player(Id: string, Money: int, currPetak: Petak*, listProperty: vector<Property*>, listCard: vector<Card*>, Status: string): Player
-+ getID(): string
-+ getMoney(): int
-+ operator=(amount : int) : Player&
-+ operator-(amount : int): Player&
-+ operator+(amount : int): Player&
-+ getWealth(): int
-+ move(steps: int): void
-+ getPropertyAt(): Property* // 0 based
-+ getPropertyNum(): int
-+ showProperty(): void
-+ getCardAt(int): Card* // 0 based
-+ addCard(Card): void
-+ removeCardAt(int): Card* // 0 based
-+ setStatus(string): void
-+ getStatus(): string
- */
-    Player(std::string id, int money, Tile* currPetak, std::vector<Property*> listProperty, std::vector<Card*> listCard, std::string status) 
-        : id(id), money(money), currPetak(currPetak), listProperty(listProperty), listCard(listCard), status(status) {}
-    
-    std::string getID() const {return id;}
-    int getMoney() const {return money;}
+using namespace std;
 
-    Player& operator=(int amount) {
-        money = amount;
-        return *this;
-    }
-    Player& operator+(int amount){
-        money += amount;
-        return *this;
-    }
-    Player& operator-(int amount){
-        money -= amount;
-        return *this;
-    }
+enum class PlayerStatus
+{
+    ACTIVE,
+    BANKRUPT,
+    JAILED
+};
 
-    int getWealth() const;
-    void move(int steps);
-    Property* getPropertyAt(int pos) const {return listProperty[pos];}
-    int getPropertyNum() const;
-    void showProperty() const;
-    Card* getCardAt(int pos) const {return listCard[pos];}
-    void addCard(Card* newCard);
-    Card* removeCardAt(int pos);
-    void setStatus(std::string newStatus);
-    std::string getStatus() const {return status;}
-    std::string getId() const{return id;}
+class Player
+{
+private:
+    string username;
+    int balance;
+    int position; // indeks petak (0-39)
+    PlayerStatus status;
+    int jailTurns; // sudah berapa giliran di penjara
 
-    };
+    vector<Property *> properties;  // daftar properti yang dimiliki
+    vector<SkillCard *> skillCards; // kartu kemampuan di tangan (maks 3)
+
+    bool cardUsedThisTurn; // flag pemakaian kartu per giliran
+    bool shieldActive;
+    string id;
+
+public:
+    /**
+    + Player(Id: string, Money: int, currPetak: Petak*, listProperty: vector<Property*>, listCard: vector<Card*>, Status: string): Player
+    + getID(): string
+    + getMoney(): int
+    + operator=(amount : int) : Player&
+    + operator-(amount : int): Player&
+    + operator+(amount : int): Player&
+    + getWealth(): int
+    + move(steps: int): void
+    + getPropertyAt(): Property* // 0 based
+    + getPropertyNum(): int
+    + showProperty(): void
+    + getCardAt(int): Card* // 0 based
+    + addCard(Card): void
+    + removeCardAt(int): Card* // 0 based
+    + setStatus(string): void
+    + getStatus(): string
+     */
+    Player(const std::string &username, int startingBalance);
+    ~Player() = default;
+
+    // GET
+    string getUsername() const;
+    int getBalance() const;
+    int getPosition() const;
+    PlayerStatus getStatus() const;
+    int getJailTurns() const;
+
+    // SET
+    void setPosition(int tileIndex);
+    void setStatus(PlayerStatus status);
+    void setJailTurns(int turns);
+
+    // KEUANGAN
+    Player &operator+=(int amount);
+    // operator overloading: pemain -= jumlah (bayar uang)
+    Player &operator-=(int amount);
+    // cek apakah saldo cukup untuk membayar sejumlah amount
+    bool canAfford(int amount) const;
+    bool operator>(const Player &other) const;
+    bool operator<(const Player &other) const;
+
+    // Player &operator=(int amount)
+    // {
+    //     money = amount;
+    //     return *this;
+    // }
+    // Player &operator+(int amount)
+    // {
+    //     money += amount;
+    //     return *this;
+    // }
+    // Player &operator-(int amount)
+    // {
+    //     money -= amount;
+    //     return *this;
+    // }
+
+    // PROPERTI
+    void addProperty(Property *prop);                // tambah properti ke daftar milik pemain
+    void removeProperty(Property *prop);             // lepas properti dari daftar milik pemain
+    const vector<Property *> &getProperties() const; // ambil seluruh properti milik pemain
+    int getPropertyCount() const;
+    void cetakAkta() const;
+
+    // KARTU
+    bool addSkillCard(SkillCard *card);
+    void discardSkillCard(int index);
+    const vector<SkillCard *> &getHand() const;
+    int getHandSize() const;
+    void setCardUsedThisTurn(bool used);
+    bool hasUsedCardThisTurn() const;
+
+    // JAIL
+    void goToJail();
+    void releaseFromJail();
+    bool isInJail() const;
+    void incrementJailTurns();
+
+    // SHIELD CARD
+    void activateShield();   // aktifkan efek kebal dari ShieldCard
+    bool isShielded() const; // cek apakah pemain sedang terlindungi shield
+    void deactivateShield(); // matikan efek shield (dipanggil di akhir giliran)
+
+    // TURN
+    void onTurnStart();
+
+    // int getWealth() const;
+    // void move(int steps);
+    // Property *getPropertyAt(int pos) const { return listProperty[pos]; }
+    // int getPropertyNum() const;
+    // void showProperty() const;
+    // Card *getCardAt(int pos) const { return listCard[pos]; }
+    // void addCard(Card *newCard);
+    // Card *removeCardAt(int pos);
+    // void setStatus(std::string newStatus);
+    // std::string getStatus() const { return status; }
+    // std::string getId() const { return id; }
+};
 
 #endif
