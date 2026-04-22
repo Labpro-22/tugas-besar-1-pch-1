@@ -5,12 +5,13 @@
 #include <string>
 #include <memory>
 #include <algorithm>
-#include "../Card/Card.hpp"
-#include "../Card/SkillCard.hpp"
-#include "../Card/ShieldCard.hpp"
-#include "../Property/Property.hpp"
 
 using namespace std;
+
+class Card;
+class SkillCard;
+class ShieldCard;
+class Property;
 
 enum class PlayerStatus
 {
