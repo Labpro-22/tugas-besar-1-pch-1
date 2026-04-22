@@ -8,7 +8,6 @@
 #include "../Card/SkillCard.hpp"
 #include "../Card/ShieldCard.hpp"
 #include "../Property/Property.hpp"
-#include "../Board/Board.hpp"
 
 using namespace std;
 

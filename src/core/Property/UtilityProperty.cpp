@@ -4,7 +4,7 @@ UtilityProperty::UtilityProperty()
 {
 }
 
-UtilityProperty::UtilityProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, map<int, int> rentPrice) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, ownerId), rentPrice(rentPrice)
+UtilityProperty::UtilityProperty(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, map<int, int> rentPrice) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, ownerId), rentPrice(rentPrice)
 {
 }
 

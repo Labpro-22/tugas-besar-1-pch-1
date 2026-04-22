@@ -4,7 +4,7 @@ Property::Property()
 {
 }
 
-Property::Property(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId) : id(id), code(code), name(name), colorGroup(colorGroup), purchasePrice(purchasePrice), mortageValue(mortageValue), ownerId(ownerId)
+Property::Property(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId) : id(id), code(code), name(name), colorGroup(colorGroup), purchasePrice(purchasePrice), mortageValue(mortageValue), ownerId(ownerId)
 {
     this->status = PropertyStatus::BANK;
 }
@@ -13,7 +13,7 @@ Property::~Property()
 {
 }
 
-string Property::getId() const
+int Property::getId() const
 {
     return id;
 }

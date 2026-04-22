@@ -19,7 +19,7 @@ vector<unique_ptr<Property>> PropertyFactory::createProperties(
             }
 
             properties.push_back(make_unique<StreetProperty>(
-                to_string(p.id), // kalau constructor property kamu masih string
+                p.id, // kalau constructor property kamu masih string
                 p.code,
                 p.name,
                 p.color,
@@ -37,7 +37,7 @@ vector<unique_ptr<Property>> PropertyFactory::createProperties(
         else if (p.type == "RAILROAD")
         {
             properties.push_back(make_unique<RailroadProperty>(
-                to_string(p.id),
+                p.id,
                 p.code,
                 p.name,
                 p.color,
@@ -49,7 +49,7 @@ vector<unique_ptr<Property>> PropertyFactory::createProperties(
         else if (p.type == "UTILITY")
         {
             properties.push_back(make_unique<UtilityProperty>(
-                to_string(p.id),
+                p.id,
                 p.code,
                 p.name,
                 p.color,

@@ -4,7 +4,7 @@ StreetProperty::StreetProperty()
 {
 }
 
-StreetProperty::StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, ownerId), houseUpgCost(houseUpgCost), hotelUpgCost(hotelUpgCost), rentPrice(rentPrice), buildingCount(buildingCount), hasHotel(hasHotel), festivalMultiplier(festivalMultiplier), festivalDuration(festivalDuration)
+StreetProperty::StreetProperty(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration) : Property(id, code, name, colorGroup, purchasePrice, mortageValue, ownerId), houseUpgCost(houseUpgCost), hotelUpgCost(hotelUpgCost), rentPrice(rentPrice), buildingCount(buildingCount), hasHotel(hasHotel), festivalMultiplier(festivalMultiplier), festivalDuration(festivalDuration)
 {
 }
 

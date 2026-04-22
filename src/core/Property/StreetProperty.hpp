@@ -22,7 +22,7 @@ private:
 
 public:
     StreetProperty();
-    StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration);
+    StreetProperty(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration);
     ~StreetProperty();
 
     int getHouseUpgCost() const;

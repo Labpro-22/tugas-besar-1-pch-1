@@ -12,7 +12,7 @@ private:
 
 public:
     RailroadProperty();
-    RailroadProperty(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, map<int, int> rentFactor);
+    RailroadProperty(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, map<int, int> rentFactor);
     ~RailroadProperty();
 
     int calculateRentPrice(int diceRoll,

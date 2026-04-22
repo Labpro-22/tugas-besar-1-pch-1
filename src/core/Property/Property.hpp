@@ -16,7 +16,7 @@ enum class PropertyStatus
 class Property
 {
 private:
-    string id;
+    int id;
     string code;
     string name;
     string colorGroup;
@@ -27,9 +27,9 @@ private:
 
 public:
     Property();
-    Property(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId);
+    Property(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId);
     virtual ~Property();
-    string getId() const;
+    int getId() const;
     string getCode() const;
     string getName() const;
     string getColorGroup() const;
