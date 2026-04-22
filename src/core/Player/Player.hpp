@@ -55,7 +55,7 @@ public:
     + getStatus(): string
      */
     Player(const std::string &username, int startingBalance);
-    ~Player() = default;
+    ~Player();
 
     // GET
     string getUsername() const;
@@ -66,14 +66,12 @@ public:
 
     // SET
     void setPosition(int tileIndex);
-    void setStatus(PlayerStatus status);
+    void setStatus(PlayerStatus newStatus);
     void setJailTurns(int turns);
 
     // KEUANGAN
     Player &operator+=(int amount);
-    // operator overloading: pemain -= jumlah (bayar uang)
     Player &operator-=(int amount);
-    // cek apakah saldo cukup untuk membayar sejumlah amount
     bool canAfford(int amount) const;
     bool operator>(const Player &other) const;
     bool operator<(const Player &other) const;
@@ -99,7 +97,6 @@ public:
     void removeProperty(Property *prop);             // lepas properti dari daftar milik pemain
     const vector<Property *> &getProperties() const; // ambil seluruh properti milik pemain
     int getPropertyCount() const;
-    void cetakAkta() const;
 
     // KARTU
     bool addSkillCard(SkillCard *card);
