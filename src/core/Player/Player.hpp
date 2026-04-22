@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 #include "../Card/Card.hpp"
 #include "../Card/SkillCard.hpp"
 #include "../Card/ShieldCard.hpp"
