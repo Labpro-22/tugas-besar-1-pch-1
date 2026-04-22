@@ -57,6 +57,10 @@ public:
     void onExit()  override;
     void update(float dt) override;
     void render(Window& window) override;
+    void setPlayerCount(int n){activePlayerCount = n;}
+    int activePlayerCount = 4;
+    bool gameOver = false;
+    bool isGameOver() const {return gameOver;}
 
 private:
     // ── Layout ──────────────────────────────────────────────────────────
@@ -68,7 +72,7 @@ private:
     static constexpr float ORIG_TILE_W  = 200.f;
     static constexpr float ORIG_TILE_H  = 290.f;
     static constexpr float ORIG_CORNER  = 290.f;
-    static constexpr float ORIG_STRIP_W = 176.f;
+    static constexpr float ORIG_STRIP_W = 200.f;
     static constexpr float ORIG_STRIP_H =  35.f;
 
     // Scale: board height = 2*290 + 9*200 = 2380, fit to 1080
@@ -88,12 +92,11 @@ private:
     void drawLogPopup();
     std::string getActionIcon(const std::string& action);
     Color getActionColor(const std::string& action);
-
     // Hanlde keyboardInput
     std::string logNInput;   // string yang diketik user
     bool logNFocused; // apakah input box sedang aktif
-
-
+    
+    
     float boardX, boardY;
 
     // ── Tiles ────────────────────────────────────────────────────────────
@@ -147,4 +150,5 @@ private:
     Vector2   getTileCenter(int idx);
     Rectangle getTileRect(int idx);
     int       tileAtPoint(Vector2 pt);
+
 };

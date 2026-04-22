@@ -189,6 +189,9 @@ void GameScreen::initMockState() {
 
 // ─── Input ────────────────────────────────────────────────────────────────────
 void GameScreen::handleInput() {
+    // Testing — tekan W untuk simulasi game over
+    if (IsKeyPressed(KEY_W)) gameOver = true;
+
     Vector2 mouse = GetMousePosition();
 
     float cx1 = boardX + CORNER_SZ;
@@ -383,7 +386,7 @@ void GameScreen::drawPlayers(int tileIdx, float cx, float cy) {
     for (int i=0; i<(int)onTile.size(); i++) {
         int pi = onTile[i];
         float px = startX + i*sp;
-        DrawCircle((int)px, (int)cy, r+1, BLACK);
+        DrawCircle((int)px, (int)cy, r+3, WHITE);
         DrawCircle((int)px, (int)cy, r, playerColors[pi]);
         std::string num = std::to_string(pi+1);
         int fw = MeasureText(num.c_str(), 9);
@@ -548,6 +551,12 @@ void GameScreen::drawLeftPanel() {
         if (pl.cardCount>0)
             DrawText(("x"+std::to_string(pl.cardCount)).c_str(),
                      38+pl.cardCount*16+2,(int)(py+66),10,{150,150,200,255});
+        
+        if (p >= activePlayerCount) {
+            DrawRectangleRec(card, {0, 0, 0, 180});
+            DrawText("+", (int)(card.x + card.width/2 - 5),
+                    (int)(card.y + card.height/2 - 6), 14, {50,52,80,255});
+        }
     }
 }
 

@@ -18,4 +18,6 @@ class GUIManager{
         void run();
         void pushCommand();
        void shutdown();
+       IScreen* getCurrentScreen() const { return currentScreen; }
+       Window& getWindow(){return window;}
 };
