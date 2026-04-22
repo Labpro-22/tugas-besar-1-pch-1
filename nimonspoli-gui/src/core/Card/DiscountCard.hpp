@@ -15,7 +15,7 @@ public:
     DiscountCard(const string &type, const string &description, bool used, double discountPercent, int duration);
     ~DiscountCard();
     int getDuration();
-    double getDiscountPercent();
+    double getDiscountPercent() const;
     void decreaseDuration();
     void execute(Player &p, GameState &gs) override;
 };
