@@ -99,6 +99,7 @@ public:
     PropertyTile(int id, string display, TileType type, TileName name, string code);
     Property* getProperty() const;
     virtual int calculateRent(int diceTotal) const = 0;
+    void setProperty(Property* p) { prop = p; }
 };
 
 class StreetTile : public PropertyTile {

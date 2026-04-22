@@ -1,7 +1,15 @@
 #include "GameScreen.hpp"
 #include "../../../lib/raylib/include/raylib.h"
 #include "raymath.h"
-#include "../../core/Commands/LemparDaduCommand.hpp"
+#include "../../core/Player/Player.hpp"
+#include "../../core/GameMaster/GameMaster.hpp"
+#include "../../core/GameState/GameState.hpp"
+#include "../../core/Card/Card.hpp"
+#include "../../core/Board/Board.hpp"
+#include "../../core/Property/Property.hpp"
+#include "../../core/Property/RailroadProperty.hpp"
+#include "../../core/Property/StreetProperty.hpp"
+#include "../../core/Property/UtilityProperty.hpp"
 #include <cmath>
 #include <string>
 #include <algorithm>
@@ -57,14 +65,6 @@ static const TileDef TILE_DEFS[40] = {
     {"IKN", "RIGHT",  false},   // 39
 };
 
-// Helper
-static void DrawRoundedBorder(Rectangle rec, float roundness, int segments, float thick, Color color) {
-    for (float i = 0.f; i < thick; i += 0.5f) {
-        Rectangle r = { rec.x - i, rec.y - i, rec.width + i*2, rec.height + i*2 };
-        DrawRectangleRoundedLines(r, roundness, segments, thick, color);
-    }
-}
-
 // ─── Constructor ─────────────────────────────────────────────────────────────
 GameScreen::GameScreen()
     : zoomLevel(1.f), zoomOffset({0,0}), isDragging(false),
@@ -101,30 +101,40 @@ void GameScreen::onExit() {
 // ─── Update ──────────────────────────────────────────────────────────────────
 void GameScreen::update(float dt) {
     glowTimer += dt;
-
-    // Tick animasi dadu
-    if (diceState.animating) {
-        diceState.animTimer += dt;
-        if (diceState.animTimer >= DiceState::ANIM_DURATION) {
-            diceState.animating = false;
-            diceState.animTimer = 0.f;
-        }
-    }
-
     handleInput();
+    // cek GameOver
+    if (gm && gm->getState().isGameOver())
+        gameOver = true;
+    // kspGlowing = gameState.kspGlow;
+    // dnuGlowing = gameState.dnuGlow;
 }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
 void GameScreen::render(Window& window) {
-    (void)window;
+    (void)window; // Window handles BeginDrawing/ClearBackground/EndDrawing
     ClearBackground({20, 22, 30, 255});
     drawLeftPanel();
     drawRightPanel();
     drawBoard();
-    drawDiceArea();   // overlay dadu di tengah board
     drawPopup();
     drawLogPopup();
     DrawFPS(LEFT_PANEL + 4, 4);
+
+    
+    if (notifTimer > 0) {
+        notifTimer -= GetFrameTime();
+
+        int nw = MeasureText(notifMsg.c_str(), 16);
+        float nx = LEFT_PANEL + (SCREEN_W - LEFT_PANEL - RIGHT_PANEL)/2.f - nw/2.f;
+        float ny = SCREEN_H - 60;
+
+        DrawRectangle((int)(nx-16), (int)(ny-10), nw+32, 38,
+                    {0,0,0,200});
+        DrawRectangleLinesEx({nx-16, ny-10, (float)(nw+32), 38},
+                            1, notifColor);
+        DrawText(notifMsg.c_str(), (int)nx, (int)ny, 16, notifColor);
+    }
+
 }
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
@@ -159,6 +169,9 @@ void GameScreen::loadTextures() {
         deckDNU = LoadTexture("assets/middle_deck/DNU-SourceCard.png");
 }
 
+void GameScreen::setPlayerNames(const std::array<std::string, 4>& names) {
+    pendingNames = names;  // simpan dulu, apply nanti di onEnter/initMockState
+}
 // ─── Mock state ───────────────────────────────────────────────────────────────
 void GameScreen::initMockState() {
     gameState.currentTurn     = 15;
@@ -168,11 +181,18 @@ void GameScreen::initMockState() {
     // gameState.dnuGlow         = true;
 
     gameState.players = {
-    {"Uname1", 1500,  0, "ACTIVE", 2, true },  // GO
-    {"Uname2",  800,  5, "ACTIVE", 1, false},  // GBR
-    {"Uname3", 2200, 11, "ACTIVE", 3, false},  // SBY
-    {"Uname4",    0, 10, "JAILED", 0, false},  // PEN
-};
+        {"Uname1", 1500,  0, "ACTIVE", 2, true },
+        {"Uname2",  800, 31, "ACTIVE", 1, false},
+        {"Uname3", 2200, 11, "ACTIVE", 3, false},
+        {"Uname4",    0, 10, "JAILED", 0, false},
+
+    
+    };
+
+    for (int i = 0; i < (int)gameState.players.size(); i++) {
+        if (i < activePlayerCount && !pendingNames[i].empty())
+            gameState.players[i].username = pendingNames[i];
+    }
 
     gameState.properties.resize(40);
     for (int i=0; i<40; i++) {
@@ -309,11 +329,64 @@ int GameScreen::tileAtPoint(Vector2 pt) {
 
 // ─── Draw tile ───────────────────────────────────────────────────────────────
 void GameScreen::drawTile(int idx, float cx, float cy, float rotation) {
-    auto& td   = TILE_DEFS[idx];
-    auto& prop = gameState.properties[idx];
-    float tw   = td.corner ? CORNER_SZ : TILE_W;
-    float th   = td.corner ? CORNER_SZ : TILE_H;
+    auto& td = TILE_DEFS[idx];
+    float tw = td.corner ? CORNER_SZ : TILE_W;
+    float th = td.corner ? CORNER_SZ : TILE_H;
 
+    // ── Kumpulkan data properti dulu ──────────────────────────────────────
+    std::string propType     = "ACTION";
+    std::string propGroup    = "";
+    int         owner        = -1;
+    int         buildings    = 0;
+    bool        mortgaged    = false;
+    int         festivalMult = 1;
+
+    if (usingMockState) {
+        // Mock data
+        auto& prop   = gameState.properties[idx];
+        propType     = prop.type;
+        propGroup    = prop.colorGroup;
+        owner        = prop.owner;
+        buildings    = prop.buildings;
+        mortgaged    = prop.mortgaged;
+        festivalMult = prop.festivalMult;
+
+    } else if (gm && gm->getState().getBoard()) {
+        // Real data dari Board
+        Board* board = gm->getState().getBoard();
+        auto* pt = dynamic_cast<PropertyTile*>(board->getTile(idx));
+        if (pt && pt->getProperty()) {
+            Property* prop = pt->getProperty();
+
+            // Cari index player dari ownerId
+            std::string ownerId = prop->getOwnerId();
+            if (!ownerId.empty() && ownerId != "BANK") {
+                auto players = gm->getState().getPlayers();
+                for (int i = 0; i < (int)players.size(); i++) {
+                    if (players[i]->getUsername() == ownerId) {
+                        owner = i;
+                        break;
+                    }
+                }
+            }
+
+            mortgaged = (prop->getStatus() == PropertyStatus::MORTGAGED);
+
+            // Cast ke subclass untuk data spesifik
+            if (auto* sp = dynamic_cast<StreetProperty*>(prop)) {
+                propType     = "STREET";
+                propGroup    = prop->getColorGroup();
+                buildings    = sp->gethasHotel() ? 5 : sp->getBuildingCount();
+                festivalMult = sp->getFestivalMultiplier();
+            } else if (dynamic_cast<RailroadProperty*>(prop)) {
+                propType = "RAILROAD";
+            } else if (dynamic_cast<UtilityProperty*>(prop)) {
+                propType = "UTILITY";
+            }
+        }
+    }
+
+    // ── Draw texture tile ─────────────────────────────────────────────────
     auto it = tileTextures.find(td.code);
     if (it != tileTextures.end()) {
         Texture2D& tex = it->second;
@@ -328,29 +401,31 @@ void GameScreen::drawTile(int idx, float cx, float cy, float rotation) {
         DrawText(td.code.c_str(), (int)(cx-fw/2), (int)(cy-5), 9, WHITE);
     }
 
-    // Festival ring
-    if (prop.festivalMult > 1) {
+    // ── Festival ring ─────────────────────────────────────────────────────
+    if (festivalMult > 1) {
         float pulse = 0.7f + 0.3f * sinf(glowTimer * 4.f);
-        float thick = 1.5f * log2f((float)prop.festivalMult);
+        float thick = 1.5f * log2f((float)festivalMult);
         Color rc;
-        if      (prop.festivalMult == 2) rc = {239,159, 39,(unsigned char)(200*pulse)};
-        else if (prop.festivalMult == 4) rc = {186,117, 23,(unsigned char)(220*pulse)};
-        else                             rc = {133, 79, 11,(unsigned char)(240*pulse)};
-        DrawRectangleLinesEx({cx-tw/2.f-thick, cy-th/2.f-thick, tw+2*thick, th+2*thick}, thick, rc);
-        std::string lbl = "x" + std::to_string(prop.festivalMult);
+        if      (festivalMult == 2) rc = {239,159, 39,(unsigned char)(200*pulse)};
+        else if (festivalMult == 4) rc = {186,117, 23,(unsigned char)(220*pulse)};
+        else                        rc = {133, 79, 11,(unsigned char)(240*pulse)};
+        DrawRectangleLinesEx({cx-tw/2.f-thick, cy-th/2.f-thick,
+                              tw+2*thick, th+2*thick}, thick, rc);
+        std::string lbl = "x" + std::to_string(festivalMult);
         DrawText(lbl.c_str(), (int)(cx-tw/2.f+2), (int)(cy-th/2.f+2), 10, rc);
     }
 
-    // Owner strip + buildings
-    if (prop.owner >= 0 && prop.type == "STREET") {
-        drawBuildingStrip(cx, cy, rotation, prop.buildings, playerColors[prop.owner]);
-        if (prop.mortgaged) {
+    // ── Owner strip + buildings ───────────────────────────────────────────
+    if (owner >= 0 && propType == "STREET") {
+        drawBuildingStrip(cx, cy, rotation, buildings, playerColors[owner]);
+        if (mortgaged) {
             DrawRectangleRec({cx-tw/2.f, cy-th/2.f, tw, th}, {0,0,0,140});
             int fw = MeasureText("GADAI", 10);
             DrawText("GADAI", (int)(cx-fw/2), (int)(cy-5), 10, RED);
         }
-    } else if (prop.owner >= 0) {
-        DrawRectangleLinesEx({cx-tw/2.f, cy-th/2.f, tw, th}, 3, playerColors[prop.owner]);
+    } else if (owner >= 0) {
+        // Railroad / Utility — border warna owner saja
+        DrawRectangleLinesEx({cx-tw/2.f, cy-th/2.f, tw, th}, 3, playerColors[owner]);
     }
 }
 
@@ -524,7 +599,6 @@ void GameScreen::drawCenterArea() {
 
     EndScissorMode();
 }
-
 // ─── Left panel ───────────────────────────────────────────────────────────────
 void GameScreen::drawLeftPanel() {
     DrawRectangle(0,0,LEFT_PANEL,SCREEN_H,{30,30,40,255});
@@ -534,13 +608,56 @@ void GameScreen::drawLeftPanel() {
 
     float panelH = (SCREEN_H - 50.f) / 4.f;
 
-    for (int p=0; p<(int)gameState.players.size(); p++) {
-        auto&  pl     = gameState.players[p];
-        Color  col    = playerColors[p];
-        float  py     = 40 + p*panelH;
-        bool   active = (p == gameState.activePlayerIdx);
+    // Ambil data players — real atau mock
+    int playerCount = 4;
+    if (!usingMockState && gm)
+        playerCount = (int)gm->getState().getPlayers().size();
+
+    for (int p = 0; p < 4; p++) {
+        Color col = playerColors[p];
+        float py  = 40 + p * panelH;
 
         Rectangle card = {8, py, LEFT_PANEL-16, panelH-6};
+
+        // ── Ambil data player ──────────────────────────────────────────────
+        std::string username = "Player " + std::to_string(p+1);
+        int         money    = 0;
+        int         position = 0;
+        std::string status   = "ACTIVE";
+        int         cardCount= 0;
+        bool        active   = false;
+
+        if (usingMockState) {
+            // Pakai mock data
+            if (p < (int)gameState.players.size()) {
+                auto& pl = gameState.players[p];
+                username  = pl.username;
+                money     = pl.money;
+                position  = pl.position;
+                status    = pl.status;
+                cardCount = pl.cardCount;
+                active    = (p == gameState.activePlayerIdx);
+            }
+        } else if (gm) {
+            // Pakai real data
+            auto players = gm->getState().getPlayers();
+            if (p < (int)players.size()) {
+                Player* pl = players[p];
+                username   = pl->getUsername();
+                money      = pl->getBalance();
+                position   = pl->getPosition();
+                cardCount  = pl->getHandSize();
+                active     = (p == gm->getState().getCurrPlayerIdx());
+
+                switch (pl->getStatus()) {
+                    case PlayerStatus::ACTIVE:   status = "ACTIVE";   break;
+                    case PlayerStatus::JAILED:   status = "JAILED";   break;
+                    case PlayerStatus::BANKRUPT: status = "BANKRUPT"; break;
+                }
+            }
+        }
+
+        // ── Draw card ──────────────────────────────────────────────────────
         DrawRectangleRec(card, active ? Color{45,50,65,255} : Color{35,37,48,255});
         DrawRectangleLinesEx(card, active?2.f:1.f, active?col:Color{60,60,80,255});
         DrawRectangle(8,(int)py,4,(int)(panelH-6),col);
@@ -550,34 +667,45 @@ void GameScreen::drawLeftPanel() {
         std::string pn = std::to_string(p+1);
         DrawText(pn.c_str(),18,(int)(py+6),11,WHITE);
 
-        DrawText(pl.username.c_str(),38,(int)(py+6),13,WHITE);
-        if (active) DrawText("▶ GILIRAN",LEFT_PANEL-90,(int)(py+6),10,col);
+        DrawText(username.c_str(),38,(int)(py+6),13,WHITE);
+        if (active) DrawText("GILIRAN",LEFT_PANEL-80,(int)(py+6),10,col);
 
-        DrawText(("M "+std::to_string(pl.money)).c_str(),38,(int)(py+22),12,{100,220,100,255});
-        DrawText(("@ "+std::string(TILE_DEFS[pl.position].code)).c_str(),
+        DrawText(("M "+std::to_string(money)).c_str(),38,(int)(py+22),12,{100,220,100,255});
+        DrawText(("@ "+std::string(TILE_DEFS[position].code)).c_str(),
                  38,(int)(py+36),11,{180,180,180,255});
 
         Color sc = {100,220,100,255};
-        if (pl.status=="JAILED")   sc={220,100,100,255};
-        if (pl.status=="BANKRUPT") sc={120,120,120,255};
-        DrawText(pl.status.c_str(),38,(int)(py+50),10,sc);
+        if (status=="JAILED")   sc={220,100,100,255};
+        if (status=="BANKRUPT") sc={120,120,120,255};
+        DrawText(status.c_str(),38,(int)(py+50),10,sc);
 
-        for (int c=0; c<pl.cardCount&&c<3; c++) {
+        for (int c=0; c<cardCount&&c<3; c++) {
             DrawRectangle(38+c*16,(int)(py+64),12,16,{80,100,160,255});
             DrawRectangleLinesEx({38.f+c*16,py+64,12,16},1,{120,140,200,255});
         }
-        if (pl.cardCount>0)
-            DrawText(("x"+std::to_string(pl.cardCount)).c_str(),
-                     38+pl.cardCount*16+2,(int)(py+66),10,{150,150,200,255});
-        
+        if (cardCount>0)
+            DrawText(("x"+std::to_string(cardCount)).c_str(),
+                     38+cardCount*16+2,(int)(py+66),10,{150,150,200,255});
+
+        // ── Overlay slot tidak aktif (player count < 4) ────────────────────
         if (p >= activePlayerCount) {
-            DrawRectangleRec(card, {0, 0, 0, 180});
-            DrawText("+", (int)(card.x + card.width/2 - 5),
-                    (int)(card.y + card.height/2 - 6), 14, {50,52,80,255});
+            DrawRectangleRec(card, {0,0,0,180});
+            DrawText("-",(int)(card.x+card.width/2-4),
+                     (int)(card.y+card.height/2-8),16,{50,52,80,255});
+            continue;
+        }
+
+        // ── Overlay BANKRUPT ───────────────────────────────────────────────
+        if (status == "BANKRUPT") {
+            DrawRectangleRec(card, {0,0,0,200});
+            int bw = MeasureText("BANKRUPT",11);
+            DrawText("BANKRUPT",
+                     (int)(card.x+card.width/2-bw/2),
+                     (int)(card.y+card.height/2-6),
+                     11,{226,75,74,255});
         }
     }
 }
-
 // ─── Right panel ──────────────────────────────────────────────────────────────
 void GameScreen::drawRightPanel() {
     float rx = SCREEN_W - RIGHT_PANEL;
@@ -587,17 +715,27 @@ void GameScreen::drawRightPanel() {
     DrawText("GILIRAN",(int)rx+10,14,14,{150,150,180,255});
     DrawLine((int)rx+8,32,SCREEN_W-8,32,{60,60,80,255});
 
-    std::string ts = std::to_string(gameState.currentTurn)+" / "+
-                     std::to_string(gameState.maxTurn);
+    std::string ts = std::to_string(gm->getState().getCurrTurn())+" / "+
+                     std::to_string(gm->getState().getMaxTurn());
     DrawText("Turn",(int)rx+10,38,11,{150,150,180,255});
     DrawText(ts.c_str(),(int)rx+10,52,16,WHITE);
 
-    auto& curP = gameState.players[gameState.activePlayerIdx];
-    DrawText("Giliran:",(int)rx+10,76,11,{150,150,180,255});
-    DrawText(curP.username.c_str(),(int)rx+10,90,14,playerColors[gameState.activePlayerIdx]);
+    std::string currUsername = gm->getState().getCurrPlayer()->getUsername();
+    int currIdx = gm->getState().getCurrPlayerIdx();
 
+    DrawText("Giliran:", (int)rx+10, 76, 11, {150,150,180,255});
+    DrawText(currUsername.c_str(), (int)rx+10, 90, 14, playerColors[currIdx]);
     DrawLine((int)rx+8,112,SCREEN_W-8,112,{60,60,80,255});
     DrawText("AKSI",(int)rx+10,120,12,{150,150,180,255});
+
+    bool canRoll = false, canSave = false, canCard = false;
+    if (gm) {
+        canRoll = !gm->getState().getHasRolled()
+               && gm->getState().getPhase() == GamePhase::PLAYER_TURN;
+        canSave = !gm->getState().getHasRolled();
+        canCard = !gm->getState().getHasUsedCard()
+               && gm->getState().getCurrPlayer()->getHandSize() > 0;
+    }
 
     struct Btn { const char* label; Color col; };
     Btn btns[] = {
@@ -612,30 +750,16 @@ void GameScreen::drawRightPanel() {
     };
 
     Vector2 mouse = GetMousePosition();
-    for (int i = 0; i < 8; i++) {
+    for (int i=0; i<8; i++) {
         Rectangle btn = {rx+10, 140.f+i*44, RIGHT_PANEL-20, 36};
         bool hover    = CheckCollisionPointRec(mouse, btn);
-
-        // Tombol LEMPAR DADU (i==0): disable jika sudah roll atau sedang animasi
-        bool disabled = false;
-        if (i == 0) disabled = diceState.hasRolled || diceState.animating;
-
-        Color colBase = disabled ? Color{50,50,60,255} : Color{40,42,54,255};
-        Color colHov  = disabled ? Color{50,50,60,255}
-                                 : Color{btns[i].col.r, btns[i].col.g, btns[i].col.b, 220};
-        Color border  = disabled ? Color{70,70,80,255} : btns[i].col;
-
-        DrawRectangleRec(btn, hover && !disabled ? colHov : colBase);
-        DrawRectangleLinesEx(btn, 1, border);
-        int tw = MeasureText(btns[i].label, 11);
-        Color textCol = disabled ? Color{90,90,100,255}
-                                 : (hover ? WHITE : Color{200,200,210,255});
-        DrawText(btns[i].label, (int)(rx+RIGHT_PANEL/2-tw/2), (int)(140+i*44+12), 11, textCol);
-
-        // Klik tombol LEMPAR DADU
-        if (i == 0 && !disabled && hover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            handleLemparDadu();
-        }
+        Color bgC     = hover ? Color{btns[i].col.r,btns[i].col.g,btns[i].col.b,220}
+                              : Color{40,42,54,255};
+        DrawRectangleRec(btn, bgC);
+        DrawRectangleLinesEx(btn, 1, btns[i].col);
+        int tw = MeasureText(btns[i].label,11);
+        DrawText(btns[i].label,(int)(rx+RIGHT_PANEL/2-tw/2),(int)(140+i*44+12),
+                 11, hover?WHITE:Color{200,200,210,255});
     }
 
     DrawLine((int)rx+8,SCREEN_H-80,SCREEN_W-8,SCREEN_H-80,{60,60,80,255});
@@ -726,152 +850,6 @@ void GameScreen::drawPopup() {
     }
 }
 
-
-// ─── Lempar Dadu ─────────────────────────────────────────────────────────────
-
-void GameScreen::handleLemparDadu() {
-    // Jika ada GameMaster (mode real), push LemparDaduCommand ke GUIManager
-    if (guiManager && guiManager->getGameMaster()) {
-        GameMaster* gm   = guiManager->getGameMaster();
-        Player* player   = gm->getState().getCurrPlayer();
-        Dice*   dice     = gm->getState().getDice();
-        if (player && dice) {
-            guiManager->pushCommand(new LemparDaduCommand(*gm, player, *dice));
-        }
-        return;
-    }
-
-    // ── Mode mock (GUI berjalan tanpa GameMaster) ─────────────────────────
-    if (diceState.hasRolled || diceState.animating) return;
-
-    // Simulasi roll dadu
-    diceState.val1 = GetRandomValue(1, 6);
-    diceState.val2 = GetRandomValue(1, 6);
-    int total      = diceState.val1 + diceState.val2;
-
-    diceState.isDouble    = (diceState.val1 == diceState.val2);
-    diceState.tripleDouble = false; // mock tidak track consecutive doubles
-    diceState.hasRolled   = true;
-    diceState.animating   = true;
-    diceState.animTimer   = 0.f;
-
-    // Update posisi mock player
-    auto& curP    = gameState.players[gameState.activePlayerIdx];
-    int   newPos  = (curP.position + total) % 40;
-
-    // Pindah pemain + log
-    std::string detail = "Lempar: " + std::to_string(diceState.val1) + "+" +
-                         std::to_string(diceState.val2) + "=" + std::to_string(total) +
-                         ", mendarat di " + TILE_DEFS[newPos].code;
-    if (diceState.isDouble) detail += " (double!)";
-
-    gameState.logger.addLog(gameState.currentTurn, curP.username, "DADU", detail);
-    curP.position = newPos;
-}
-
-
-
-// ─── Draw dice area ───────────────────────────────────────────────────────────
-
-void GameScreen::drawDiceArea() {
-    // Area tengah papan (dalam inner board square)
-    float boardSz  = CORNER_SZ + 9*TILE_W + CORNER_SZ;
-    float innerX   = boardX + CORNER_SZ;
-    float innerY   = boardY + CORNER_SZ;
-    float innerSz  = 9 * TILE_W;
-    float cx       = innerX + innerSz / 2.f;
-    float cy       = innerY + innerSz / 2.f;
-    (void)boardSz;
-
-    // Ukuran dadu
-    constexpr float DIE_SZ  = 54.f;
-    constexpr float GAP     = 16.f;
-    float           totalW  = DIE_SZ * 2 + GAP;
-    float           d1x     = cx - totalW / 2.f;
-    float           d2x     = d1x + DIE_SZ + GAP;
-    float           dy      = cy - DIE_SZ / 2.f;
-
-    // ── Selama animasi: gambar angka acak berputar ────────────────────────
-    int disp1 = diceState.val1;
-    int disp2 = diceState.val2;
-    if (diceState.animating) {
-        float t = diceState.animTimer / DiceState::ANIM_DURATION;
-        // Makin lambat menjelang akhir
-        if (t < 0.85f) {
-            disp1 = GetRandomValue(1, 6);
-            disp2 = GetRandomValue(1, 6);
-        }
-    }
-
-    // Belum pernah lempar — tampilkan placeholder "?"
-    bool showResult = diceState.val1 > 0;
-
-    // ── Helper lambda: gambar satu dadu ───────────────────────────────────
-    auto drawDie = [&](float x, float y, int val, bool highlight) {
-        Color bg     = highlight ? Color{255, 230, 80, 255} : Color{240, 240, 240, 255};
-        Color border = highlight ? Color{200, 160, 0, 255}  : Color{160, 160, 160, 255};
-        Color dotCol = {30, 30, 30, 255};
-
-        // Sedikit goyang saat animasi
-        if (diceState.animating) {
-            float shake = 3.f * (1.f - diceState.animTimer / DiceState::ANIM_DURATION);
-            x += (float)GetRandomValue(-1, 1) * shake;
-            y += (float)GetRandomValue(-1, 1) * shake;
-        }
-
-        DrawRectangleRounded({x, y, DIE_SZ, DIE_SZ}, 0.2f, 8, bg);
-        DrawRoundedBorder({x, y, DIE_SZ, DIE_SZ}, 0.2f, 8, 2.f, border);
-
-        if (!showResult && !diceState.animating) {
-            int qw = MeasureText("?", 24);
-            DrawText("?", (int)(x + DIE_SZ/2 - qw/2), (int)(y + DIE_SZ/2 - 12), 24, {150,150,150,255});
-            return;
-        }
-
-        // Pola titik dadu standar
-        // Posisi titik: (col, row) dalam grid 3×3, dinormalisasi ke [0..1]
-        struct Dot { float nx, ny; };
-        static const Dot dots[6][6] = {
-            {{.5f,.5f}},                                                         // 1
-            {{.25f,.25f},{.75f,.75f}},                                           // 2
-            {{.25f,.25f},{.5f,.5f},{.75f,.75f}},                                 // 3
-            {{.25f,.25f},{.75f,.25f},{.25f,.75f},{.75f,.75f}},                   // 4
-            {{.25f,.25f},{.75f,.25f},{.5f,.5f},{.25f,.75f},{.75f,.75f}},         // 5
-            {{.25f,.25f},{.75f,.25f},{.25f,.5f},{.75f,.5f},{.25f,.75f},{.75f,.75f}}, // 6
-        };
-        static const int dotCount[6] = {1,2,3,4,5,6};
-
-        int v = (val >= 1 && val <= 6) ? val : 1;
-        for (int d = 0; d < dotCount[v-1]; d++) {
-            float dotX = x + dots[v-1][d].nx * DIE_SZ;
-            float dotY = y + dots[v-1][d].ny * DIE_SZ;
-            DrawCircle((int)dotX, (int)dotY, 5.f, dotCol);
-        }
-    };
-
-    drawDie(d1x, dy, disp1, diceState.isDouble && !diceState.animating && showResult);
-    drawDie(d2x, dy, disp2, diceState.isDouble && !diceState.animating && showResult);
-
-    // ── Label hasil di bawah dadu ─────────────────────────────────────────
-    if (showResult && !diceState.animating) {
-        int total = diceState.val1 + diceState.val2;
-        std::string lbl = std::to_string(diceState.val1) + " + " +
-                          std::to_string(diceState.val2) + " = " +
-                          std::to_string(total);
-        int lw = MeasureText(lbl.c_str(), 13);
-        DrawText(lbl.c_str(), (int)(cx - lw/2), (int)(dy + DIE_SZ + 8), 13,
-                 diceState.isDouble ? Color{255, 220, 50, 255} : Color{200, 200, 210, 255});
-
-        if (diceState.isDouble) {
-            const char* dblLbl = "DOUBLE!";
-            int dw = MeasureText(dblLbl, 12);
-            DrawText(dblLbl, (int)(cx - dw/2), (int)(dy + DIE_SZ + 26), 12,
-                     {255, 200, 50, 255});
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 void GameScreen::initMockLogs() {
     gameState.logger.addLog(15,"Uname1","DADU","Lempar: 4+5=9, mendarat di BDG");
@@ -1072,4 +1050,54 @@ void GameScreen::drawLogPopup() {
                  (int)(px+pw/2-tw/2), (int)(listY1+listH/2-10),
                  14, {100,100,140,255});
     }
+}
+
+void GameScreen::showNotification(const std::string& msg, Color col) {
+    notifMsg   = msg;
+    notifColor = col;
+    notifTimer = 3.f;  // tampil 3 detik
+}
+
+void GameScreen::setGameMaster(GameMaster* gameMaster) {
+    gm = gameMaster;
+    usingMockState = (gm == nullptr);
+    if (gm && gm->getState().getLogger()) {
+        gm->getState().getLogger()->setOnNewLog([this](const LogEntry& e) {
+            if (e.actionType == "BANKRUPT")
+                showNotification(e.username + " bangkrut!", {220,50,50,255});
+            else if (e.actionType == "TURN_START")
+                showNotification("Giliran: " + e.username, {100,180,255,255});
+        });
+    }
+}
+
+std::vector<PlayerResult> GameScreen::getResults() const {
+    std::vector<PlayerResult> results;
+    if (!gm) return results;
+    Color colors[] = {
+        {220,50,50,255},{240,200,50,255},
+        {50,180,50,255},{50,200,220,255}
+    };
+    auto players = gm->getState().getPlayers();
+    for (int i = 0; i < (int)players.size(); i++) {
+        Player* p = players[i];
+        PlayerResult r;
+        r.username      = p->getUsername();
+        r.money         = p->getBalance();
+        r.propertyCount = p->getPropertyCount();
+        r.cardCount     = p->getHandSize();
+        r.bankrupt      = (p->getStatus() == PlayerStatus::BANKRUPT);
+        r.color         = colors[i];
+        r.rank          = 0;
+        r.isWinner      = false;
+        results.push_back(r);
+    }
+    return results;
+}
+
+WinScenario GameScreen::getScenario() const {
+    if (!gm) return WinScenario::MAX_TURN;
+    return gm->getState().countActivePlayers() == 1
+           ? WinScenario::BANKRUPTCY
+           : WinScenario::MAX_TURN;
 }

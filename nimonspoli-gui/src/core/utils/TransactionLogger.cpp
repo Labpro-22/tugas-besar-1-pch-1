@@ -1,18 +1,21 @@
 #include "TransactionLogger.hpp"
 #include <algorithm>
 
-void TransactionLogger::addLog(int turn, std::string name, std::string action, std::string detail){
-    LogEntry entry;
-    entry.turn = turn;
-    entry.username = name;
-    entry.actionType = action;
-    entry.detail = detail;
-    logs.push_back(entry);
-}
 
 const std::vector<LogEntry>& TransactionLogger::getLogs() const{
     return logs;
 }
+
+void TransactionLogger::setOnNewLog(std::function<void(const LogEntry&)> cb) {
+    onNewLog = cb;
+}
+
+void TransactionLogger::addLog(int turn, std::string name, std::string action, std::string detail) {
+    LogEntry e{turn, name, action, detail};
+    logs.push_back(e);
+    if (onNewLog) onNewLog(e);  // notify GUI
+}
+
 
 std::vector<LogEntry> TransactionLogger::getLastLogs(int n) const{
     if (logs.empty()) return {};

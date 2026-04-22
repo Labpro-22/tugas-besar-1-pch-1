@@ -3,6 +3,9 @@
 #include "../IScreen.hpp"
 #include "../../core/utils/TransactionLogger.hpp"
 #include "../GUIManager.hpp"
+#include "../../core/GameMaster/GameMaster.hpp"
+#include "GameResult.hpp"
+
 #include <string>
 #include <vector>
 #include <map>
@@ -54,6 +57,11 @@ public:
     GameScreen();
     ~GameScreen() override;
 
+    void setGameMaster(GameMaster* gameMaster);
+
+    std::vector<PlayerResult> getResults() const; // for WinScreen
+    WinScenario getScenario() const;
+    void setPlayerNames(const std::array<std::string, 4>& names);
     void onEnter() override;
     void onExit()  override;
     void update(float dt) override;
@@ -66,6 +74,8 @@ public:
 
 private:
     // ── Layout ──────────────────────────────────────────────────────────
+    // Tambahkan di bagian private, setelah GUIManager* guiManager = nullptr;
+    std::array<std::string, 4> pendingNames = {"","","",""};
     static constexpr int   SCREEN_W    = 1920;
     static constexpr int   SCREEN_H    = 1080;
     static constexpr int   LEFT_PANEL  = 270;
@@ -84,6 +94,16 @@ private:
     static constexpr float CORNER_SZ  = ORIG_CORNER  * SCALE;
     static constexpr float STRIP_W    = ORIG_STRIP_W * SCALE;
     static constexpr float STRIP_H    = ORIG_STRIP_H * SCALE;
+
+    // ── Notifications ───
+    std::string notifMsg;
+    Color notifColor = WHITE;
+    float notifTimer = 0.f;
+    void showNotification(const std::string& msg, Color col);
+
+
+    GameMaster* gm = nullptr;
+    bool usingMockState = true;
 
     // TransactionLogger: Popup-screen attributes
     bool showLogPopup;
@@ -122,7 +142,7 @@ private:
     bool  kspGlowing, dnuGlowing;
     float glowTimer;
 
-    // ── State ────────────────────────────────────────────────────────────
+    // // ── State ────────────────────────────────────────────────────────────
     MockGameState gameState;
 
     // ── GUIManager (untuk pushCommand) ───────────────────────────────────

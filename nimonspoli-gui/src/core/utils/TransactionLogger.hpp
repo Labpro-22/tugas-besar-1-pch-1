@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 // Struktur data untuk setiap baris kejadian
 // Contoh:
@@ -17,10 +18,10 @@ struct LogEntry {
 class TransactionLogger {
 private:
     std::vector<LogEntry> logs;
-
+    std::function<void(const LogEntry&)> onNewLog;
 public:
     TransactionLogger() = default;
-
+    void setOnNewLog(std::function<void(const LogEntry&)> cb);
     // Menambah catatan baru ke dalam daftar
     void addLog(int turn, std::string name, std::string action, std::string detail);
 

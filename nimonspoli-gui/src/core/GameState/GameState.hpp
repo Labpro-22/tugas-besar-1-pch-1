@@ -122,5 +122,6 @@ public:
     // ── Helper ───────────────────────────────────
     bool isMaxTurnReached() const;
     int  countActivePlayers() const;
+    void addPlayer(Player* p) { listPlayer.push_back(p); }
 };
 #endif
