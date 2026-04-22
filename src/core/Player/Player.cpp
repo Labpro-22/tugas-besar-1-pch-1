@@ -1,13 +1,14 @@
 #include "Player.hpp"
 
-int Player::getWealth() const 
+int Player::getWealth() const
 {
     int totalWealth = money;
-    for(Property* prop : listProperty) totalWealth += prop->getMortageValue();
+    for (Property *prop : listProperty)
+        totalWealth += prop->getMortageValue();
     return totalWealth;
 }
 
-void Player::move(int steps) 
+void Player::move(int steps)
 {
     // nunggu Petak Papan
 }
@@ -19,24 +20,26 @@ int Player::getPropertyNum() const
 
 void Player::showProperty() const
 {
-    for(Property* prop : listProperty) {
+    for (Property *prop : listProperty)
+    {
         // do something?
     }
 }
 
-void Player::addCard(Card* newCard)
+void Player::addCard(Card *newCard)
 {
     listCard.push_back(newCard);
 }
 
-Card* Player::removeCardAt(int pos)
+Card *Player::removeCardAt(int pos)
 {
     auto iter = listCard.begin(); // udh efficient blm yh?
-    while(pos > 0){
+    while (pos > 0)
+    {
         ++iter;
         pos--;
     }
-    Card* ret = listCard[pos];
+    Card *ret = listCard[pos];
     listCard.erase(iter);
     return ret;
 }

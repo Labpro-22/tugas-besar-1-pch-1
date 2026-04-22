@@ -4,50 +4,51 @@ Property::Property()
 {
 }
 
-Property::Property(const string &id, const string &code, const string &name, const string &colorGroup, double purchasePrice, double mortageValue, PropertyStatus status, const string &ownerId) : id(id), code(code), name(name), colorGroup(colorGroup), purchasePrice(purchasePrice), mortageValue(mortageValue), status(status), ownerId(ownerId)
+Property::Property(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId) : id(id), code(code), name(name), colorGroup(colorGroup), purchasePrice(purchasePrice), mortageValue(mortageValue), ownerId(ownerId)
 {
+    this->status = PropertyStatus::BANK;
 }
 
 Property::~Property()
 {
 }
 
-string Property::getId()
+int Property::getId() const
 {
     return id;
 }
 
-string Property::getCode()
+string Property::getCode() const
 {
     return code;
 }
 
-string Property::getName()
+string Property::getName() const
 {
     return name;
 }
 
-string Property::getColorGroup()
+string Property::getColorGroup() const
 {
     return colorGroup;
 }
 
-double Property::getPurchasePrice()
+int Property::getPurchasePrice() const
 {
     return purchasePrice;
 }
 
-double Property::getMortageValue()
+int Property::getMortageValue() const
 {
     return mortageValue;
 }
 
-PropertyStatus Property::getStatus()
+PropertyStatus Property::getStatus() const
 {
     return status;
 }
 
-string Property::getOwnerId()
+string Property::getOwnerId() const
 {
     return ownerId;
 }
@@ -55,22 +56,16 @@ string Property::getOwnerId()
 void Property::setOwner(const string &newOwnerId)
 {
     ownerId = newOwnerId;
+    status = PropertyStatus::OWNED;
 }
 
 void Property::clearOwner()
 {
-    ownerId = nullptr;
+    ownerId = "";
+    status = PropertyStatus::BANK;
 }
 
 void Property::setStatus(PropertyStatus newStatus)
 {
     status = newStatus;
-}
-
-double Property::calculateRentalPrice()
-{
-}
-
-double Property::calculateSellPrice()
-{
 }

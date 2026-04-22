@@ -7,33 +7,43 @@
 class StreetProperty : public Property
 {
 private:
-    double houseUpgCost;
-    double hotelUpgCost;
+    int houseUpgCost;
+    int hotelUpgCost;
     map<int, int> rentPrice;
     int buildingCount;
     bool hasHotel;
     int festivalMultiplier;
     int festivalDuration;
+    static constexpr int MAX_HOUSES = 4;
+    static constexpr int MAX_FESTIVAL_MULTIPLIER = 8;
+    static constexpr int FESTIVAL_DURATION = 3;
+    int computeBaseRent(bool monopoly) const;
+    int applyFestivalMultiplier(int rent) const;
 
 public:
     StreetProperty();
-    StreetProperty(const string &id, const string &code, const string &name, const string &colorGroup, double purchasePrice, double mortageValue, PropertyStatus status, const string &ownerId, double houseUpgCost, double hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration);
+    StreetProperty(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, int houseUpgCost, int hotelUpgCost, map<int, int> rentPrice, int buildingCount, bool hasHotel, int festivalMultiplier, int festivalDuration);
     ~StreetProperty();
 
-    double getHouseUpgCost();
-    double getHotelUpgCost();
-    int getBuildingCount();
-    bool gethasHotel();
-    int getFestivalMultiplier();
-    int getFestivalDuration();
+    int getHouseUpgCost() const;
+    int getHotelUpgCost() const;
+    int getBuildingCount() const;
+    bool gethasHotel() const;
+    int getFestivalMultiplier() const;
+    int getFestivalDuration() const;
     void setFestivalMultiplier(int multiplier);
     void setFestivalDuration(int duration);
     void buildHouse();
     void upgToHotel();
-    double sellAllBuildings();
+    int sellAllBuildings();
     void resetFestival();
-    double calculateSellPrice();
-    double calculateRentPrice();
+    void activateFestival(int newMultiplier);
+    void decrementFestivalDuration();
+    int calculateRentPrice(int diceRoll,
+                           int ownerSameColorCount,
+                           bool monopoly) const override;
+    int calculateSellPrice() const override;
+    string formattingTXT() const override;
     friend ostream &operator<<(ostream &os, const StreetProperty &p);
 };
 
