@@ -4,10 +4,13 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 #include "../Player/Player.hpp" // Jordan
 #include "../Board/Board.hpp"   // Yavie/Hakam
 #include "../Card/CardDeck.hpp" // Arin
-#include "../../views/TransactionLogger.hpp" class CardDeck;
+#include "../../views/TransactionLogger.hpp"
+
+class CardDeck;
 
 class GameState
 {

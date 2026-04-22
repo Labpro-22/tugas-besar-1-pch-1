@@ -1,4 +1,10 @@
 #include "GameState.hpp"
+#include "../Player/Player.hpp"
+#include "../Dice/Dice.hpp"
+#include "../Bank/Bank.hpp"
+#include "../Card/Card.hpp"
+#include "../Card/CardDeck.hpp"
+#include "../GameMaster/GameState.hpp"
 
 // Constructor
 GameState::GameState()

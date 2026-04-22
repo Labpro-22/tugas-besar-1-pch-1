@@ -4,14 +4,15 @@
 #include <numeric>
 #include <string>
 #include <vector>
-#include "../Property/Property.hpp"
-#include "../Player/Player.hpp"
-#include "../Dice/Dice.hpp"
-#include "../Bank/Bank.hpp"
-#include "../GameMaster/GameState.hpp"
-#include "../Card/Card.hpp"
-#include "../Card/CardDeck.hpp"
 using namespace std;
+
+class Player;
+class GameState;
+class Dice;
+class Bank;
+class Card;
+template <typename T>
+class CardDeck;
 
 class Board
 {
