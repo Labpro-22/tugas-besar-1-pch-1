@@ -53,11 +53,13 @@ void Player::setJailTurns(int turns)
 Player &Player::operator+=(int amount)
 {
     balance += amount;
+    return *this;
 }
 
 Player &Player::operator-=(int amount)
 {
     balance -= amount;
+    return *this;
 }
 
 bool Player::canAfford(int amount) const

@@ -4,12 +4,14 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "../Card/Card.hpp"
-#include "../Card/SkillCard.hpp"
-#include "../Card/ShieldCard.hpp"
-#include "../Property/Property.hpp"
+#include <algorithm>
 
 using namespace std;
+
+class Card;
+class SkillCard;
+class ShieldCard;
+class Property;
 
 enum class PlayerStatus
 {
