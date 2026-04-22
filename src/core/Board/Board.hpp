@@ -8,8 +8,7 @@
 #include "../Player/Player.hpp"
 #include "../Dice/Dice.hpp"
 #include "../Bank/Bank.hpp"
-#include "../GameMaster/GameState.hpp"
-#include "../Card/Card.hpp"
+#include "../GameState/GameState.hpp"
 #include "../Card/CardDeck.hpp"
 using namespace std;
 

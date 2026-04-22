@@ -1,6 +1,6 @@
 #include "LelangCommand.hpp"
 #include "../AuctionManager/AuctionManager.hpp"
-#include "GameMaster.hpp"
+#include "../GameMaster/GameMaster.hpp"
 #include "../Property/Property.hpp"
 #include "../Player/Player.hpp"
 #include "../Bank/Bank.hpp"
