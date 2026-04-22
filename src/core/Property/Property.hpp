@@ -3,13 +3,14 @@
 
 #include <string>
 #include <iostream>
+#include <iomanip>
 using namespace std;
 
 enum class PropertyStatus
 {
     BANK,
     OWNED,
-    MORTAGED
+    MORTGAGED
 };
 
 class Property
@@ -19,29 +20,31 @@ private:
     string code;
     string name;
     string colorGroup;
-    double purchasePrice;
-    double mortageValue;
+    int purchasePrice;
+    int mortageValue;
     PropertyStatus status;
     string ownerId;
 
 public:
     Property();
-    Property(const string &id, const string &code, const string &name, const string &colorGroup, double purchasePrice, double mortageValue, PropertyStatus status, const string &ownerId);
+    Property(const string &id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId);
     virtual ~Property();
-    string getId();
-    string getCode();
-    string getName();
-    string getColorGroup();
-    double getPurchasePrice();
-    double getMortageValue();
-    PropertyStatus getStatus();
-    string getOwnerId();
+    string getId() const;
+    string getCode() const;
+    string getName() const;
+    string getColorGroup() const;
+    int getPurchasePrice() const;
+    int getMortageValue() const;
+    PropertyStatus getStatus() const;
+    string getOwnerId() const;
     void setOwner(const string &newOwnerId);
     void clearOwner();
     void setStatus(PropertyStatus newStatus);
-    double calculateRentalPrice();
-    double calculateSellPrice();
-    virtual void formattingTXT() const = 0;
+    virtual int calculateRentPrice(int diceRoll,
+                                   int ownerSameColorCount,
+                                   bool monopoly) const = 0;
+    virtual int calculateSellPrice() const = 0;
+    virtual string formattingTXT() const = 0;
     friend ostream &operator<<(ostream &os, const Property &p);
 };
 

@@ -1,21 +1,18 @@
 #include "GameMaster.hpp"
 
-GameMaster::GameMaster(GameState gameState) 
+GameMaster::GameMaster(GameState gameState)
     : gameState(gameState) {}
 
-void GameMaster::start() 
+void GameMaster::start()
 {
-
 }
 
 void GameMaster::handleTurn(std::string cmd)
 {
-
 }
 
 void GameMaster::nextTurn();
 {
-
 }
 
 bool GameMaster::isCompleted() const;
@@ -30,15 +27,12 @@ GameState GameMaster::getGameState() const;
 
 void GameMaster::handle(GameState state);
 {
-
 }
 
-void GameMaster::handleBankruptcy(Player* from, Player* to);
+void GameMaster::handleBankruptcy(Player *from, Player *to);
 {
-
 }
 
-void GameMaster::handleBankruptcy(Player* from, Bank* to);
+void GameMaster::handleBankruptcy(Player *from, Bank *to);
 {
-
 }
