@@ -1,4 +1,4 @@
-#include "models/Board.hpp"
+#include "Board.hpp"
 
 string tileTypeToString(TileType type)
 {
@@ -106,16 +106,29 @@ string tileNameToString(TileName name)
     }
 }
 
-Board::Board(const vector<Tile *> &Tile, int Size): tile(Tile), size(Size){}
-Tile* Board::getTile const(int idx){
+Board::Board(const vector<Tile *> &Tiles, int Size): tiles(Tiles), size(Size){}
+Board::~Board(){
+    for(Tile* t: tiles){
+        delete t;
+    }
+    tiles.clear();
+}
+
+Tile *Board::getTile(int idx) const
+{
     if (idx < 0 || idx >= size)
         return nullptr;
-    return tile[idx];
+    return tiles[idx];
 }
-Tile* Board::getNextTile const(int cur, int next)
+int Board::getNextTileIndex(int cur, int steps) const
 {
-    int nextIdx = (cur + next) % size;
-    return tile[nextIdx];
+    if (size == 0)
+        return 0;
+    return (cur + steps) % size;
+}
+Tile *Board::getNextTile(int cur, int steps) const
+{
+    return getTile(getNextTileIndex(cur, steps));
 }
 int Board::getSize() const{return size;}
 int Board::findTileIndexByCode(const string &code) const
@@ -137,7 +150,8 @@ Tile *Board::findTileByCode(const string &code) const
     return tiles[idx];
 }
 
-Tile::Tile(int id, string display, TileType type, TileName name, string code):id(id), colorDisplay(display), type(type), name(name), code(code){}
+Tile::Tile(int id, string display, TileType type, TileName name, string code)
+    : id(id), colorDisplay(display), type(type), name(name), code(code) {}
 int Tile::getIndex() const {return id;}
 string Tile::getCode() const{return code;}
 string Tile::getTileName() const
@@ -152,24 +166,50 @@ string Tile::getTileType() const
 string Tile::getDisp() const { return colorDisplay; }
 
 
-ActionTile::ActionTile(int id, string display, TileType type, tileName name, string code):Tile(id, display, type, name, code){}
+ActionTile::ActionTile(int id, string display, TileType type, TileName name, string code):Tile(id, display, type, name, code){}
 
-PropertyTile::PropertyTile(int id, string display, TileType type, tileName name, string code, *Propery prop) : Tile(id, display, type, name, code), prop(prop){}
+PropertyTile::PropertyTile(int id, string display, TileType type, TileName name, string code, Property* prop) : Tile(id, display, type, name, code), prop(prop){}
 Property* PropertyTile::getProperty() const {return prop;}
-virtual int calculateRent(int diceTotal) = 0;
+void PropertyTile::onLanded(Player &p, GameState &gs)
+{
+    if (!prop)
+        return;
+    
+    if(prop->getStatus() == "MORTGAGED") return;
 
-StreetTile::StreetTile(int id, string display, TileType type, tileName name, string code) : PropertyTile(id, display, type, name, code) {}
-int StreetTile::calculateRent(int diceTotal) {
+    if (prop->getStatus() == "OWNED" && prop->getOwner() != &p)
+    {
+        return handleOwnedByOther(p, gs);
+    }
+
+    if(prop->getStatus() == "BANK") return handleUnowned(p, gs);
+
+}
+
+StreetTile::StreetTile(int id, string display, TileType type, TileName name, string code, Property* prop) : PropertyTile(id, display, type, name, code, prop) {}
+int StreetTile::calculateRent(int diceTotal) const{
     if (!prop)
         return 0;
-    StreetProperty *sp = dynamic_cast<StreetProperty *>(prop);
+    StreetProperty *sp = dynamic_cast<StreetProperty*>(prop);
     if (!sp)
         return 0;
     return static_cast<int>(sp->calculateRentPrice(false));
 }
+void StreetTile::handleOwnedByOther(Player& p, GameState& gs){
+    // BayarSewaCommand cmdSewa(p, this, gs.getGameBank());
+    // cmdSewa.execute(gs.getGameMaster());
+    (void) p; (void) gs;
+}
+void StreetTile::handleUnowned(Player& p, GameState& gs){
+    // BeliCommand cmdBeli(p, this, gs.getGameBank());
+    // cmdBeli.execute(gs.getGameMaster());
 
-RailRoadTile::RailroadTile(int id, string display, TileType type, tileName name, string code) : PropertyTile(id, display, type, name, code) {}
-int calculateRent(int diceTotal) override{
+    (void)p;
+    (void)gs;
+}
+
+RailroadTile::RailroadTile(int id, string display, TileType type, TileName name, string code, Property* prop) : PropertyTile(id, display, type, name, code, prop) {}
+int RailroadTile::calculateRent(int diceTotal) const{
     if (!prop)
         return 0;
     RailroadProperty *rp = dynamic_cast<RailroadProperty *>(prop);
@@ -177,44 +217,74 @@ int calculateRent(int diceTotal) override{
         return 0;
     return static_cast<int>(rp->calculateRentPrice());
 }
+void RailroadTile::handleUnowned(Player &p, GameState &gs)
+{
+    // BeliCommand cmdBeli(p, this, gs.getGameBank());
+    // cmdBeli.execute(gs.getGameMaster());
+    (void)p;
+    (void)gs;
+}
+void RailroadTile::handleOwnedByOther(Player &p, GameState &gs)
+{
+    // BayarSewaCommand cmdSewa(p, this, gs.getGameBank());
+    // cmdSewa.execute(gs.getGameMaster());
+    (void)p;
+    (void)gs;
+}
 
-UtilityTile::UtilityTile(int id, string display, TileType type, tileName name, string code) PropertyTile(id, display, type, name, code) {}
-int UtilityTile::calculateRent(int diceTotal) {
+UtilityTile::UtilityTile(int id, string display, TileType type, TileName name, string code, Property* prop) :PropertyTile(id, display, type, name, code, prop) {}
+int UtilityTile::calculateRent(int diceTotal)const {
     if (!prop)
         return 0;
     UtilityProperty *up = dynamic_cast<UtilityProperty *>(prop);
     if (!up)
         return 0;
     return static_cast<int>(up->calculateRentPrice()) * diceTotal;
+   
+}
+void UtilityTile::handleUnowned(Player &p, GameState &gs)
+{
+    // BeliCommand cmdBeli(p, this, gs.getGameBank());
+    // cmdBeli.execute(gs.getGameMaster());
+    (void) p; (void)gs;
+}
+void UtilityTile::handleOwnedByOther(Player &p, GameState &gs){
+    // BayarSewaCommand cmdSewa(p, this, gs.getGameBank());
+    // cmdSewa.execute(gs.getGameMaster());
+    (void)p;
+    (void)gs;
 }
 
-GoTile::GoTile(int id, string display, TileType type, tileName name, string code, int salary) : ActionTile(id, display, type, name, code), salary(salary){}
+GoTile::GoTile(int id, string display, TileType type, TileName name, string code, int salary) : ActionTile(id, display, type, name, code), salary(salary){}
 void GoTile::onLanded(Player& p, GameState& gs) {
     p + salary;
+    (void)gs;
 }
 void GoTile::onPassed(Player& p, GameState& gs){
     p + salary;
+    (void) gs;
 }
 int GoTile::getSalary() const{
     return salary;
 }
 
-JailTile::JailTile(int id, string display, TileType type, tileName name, string code, vector<Player *> inmates,
-                   vector<Player *> visitor,
-                   int jailFine) : ActionTile(id, display, type, name, code), inmates(inmates), visitor(visitor), jailFine(jailFine){}
+JailTile::JailTile(int id, string display, TileType type, TileName name, string code,
+                   int jailFine) : ActionTile(id, display, type, name, code), jailFine(jailFine), jailIndex(id) {}
 int JailTile::getJailFine() const{return jailFine;}
 void JailTile::onLanded(Player& p, GameState& gs) {
-    visitor.push_back(p);
+    visitors.push_back(&p);
+    (void) gs;
 }
 void JailTile::sendToJail(Player& p){
-    visitor.erase(
-        remove(visitor.begin(), visitor.end(), &p),
-        visitor.end());
+    visitors.erase(
+        remove(visitors.begin(), visitors.end(), &p),
+        visitors.end());
     if (!isInmate(p))
     {
         inmates.push_back(&p);
     }
     p.setStatus("JAILED");
+    p.moveTo(jailIndex);
 }
 bool JailTile::tryEscape(Player& p, Dice& d){
     d.rollRandom();
@@ -239,8 +309,8 @@ void JailTile::release(Player& p){
     inmates.erase(std::remove(inmates.begin(), inmates.end(), &p), inmates.end());
     p.setStatus("ACTIVE");
 }
-bool JailTile::isInmate(Player& p){
-    for (auto inmate : inmates)
+bool JailTile::isInmate(const Player& p) const{
+    for (const Player* inmate : inmates)
     {
         if (inmate->getID() == p.getID())
             return true;
@@ -248,8 +318,8 @@ bool JailTile::isInmate(Player& p){
     return false;   
 }
 
-GoToJail::GoToJail(int id, string display, TileType type, tileName name, string code) : ActionTile(id, display, type, name, code) {}
-void GoToJail::onLanded(Player& p, GameState& gs) {
+GoToJailTile::GoToJailTile(int id, string display, TileType type, TileName name, string code) : ActionTile(id, display, type, name, code) {}
+void GoToJailTile::onLanded(Player& p, GameState& gs) {
     Board *board = gs.getGameBoard();
     Tile *jailTilePtr = board->findTileByCode("PEN");
 
@@ -263,20 +333,22 @@ void GoToJail::onLanded(Player& p, GameState& gs) {
     jail->sendToJail(p);
 }
 
-FreeParkingTile::FreeParkingTile(int id, string display, TileType type, tileName name, string code): ActionTile(id, display, type, name, code){}
+FreeParkingTile::FreeParkingTile(int id, string display, TileType type, TileName name, string code): ActionTile(id, display, type, name, code){}
 void FreeParkingTile::onLanded(Player& p, GameState& gs) {
     (void)p;
     (void)gs;
 }
 
-TaxTile::TaxTile(int id, string display, TileType type, tileName name, string code) : ActionTile(id, display, type, name, code) {}
+TaxTile::TaxTile(int id, string display, TileType type, TileName name, string code) : ActionTile(id, display, type, name, code) {}
 void TaxTile::onLanded(Player& p, GameState& gs) {
 
-    BayarPajakCommand cmdPajak(p, this, gs.getGameBank());
-    cmdPajak.execute();
+    // BayarPajakCommand cmdPajak(p, this, gs.getGameBank());
+    // cmdPajak.execute();
+    (void)p;
+    (void)gs;
 }
 
-CardTile::CardTile(int id, string display, TileType type, tileName name, string code, CardDeck* cardDeck) : ActionTile(id, display, type, name, code), card(cardDeck){}
+CardTile::CardTile(int id, string display, TileType type, TileName name, string code, CardDeck* cardDeck) : ActionTile(id, display, type, name, code), card(cardDeck){}
 void CardTile::onLanded(Player& p, GameState& gs) {
     if (!deck)
         return;
@@ -291,9 +363,11 @@ void CardTile::onLanded(Player& p, GameState& gs) {
     deck->discard(kartu);
 }
 
-FestivalTile::FestivalTile(int id, string display, TileType type, tileName name, string code) : ActionTile(id, display, type, name, code) {}
+FestivalTile::FestivalTile(int id, string display, TileType type, TileName name, string code) : ActionTile(id, display, type, name, code) {}
 void FestivalTile::onLanded(Player &, GameState &) {
     // Di laporan tidak ada yang handle ini, apakah harus dari kelas ini sendiri?
-    FestivalCommand cmdFestival(p, gs);
-    cmdFestival.execute(gs.getGameMaster());
+    // FestivalCommand cmdFestival(p, gs);
+    // cmdFestival.execute(gs.getGameMaster());
+    (void)p;
+    (void)gs;
 }
