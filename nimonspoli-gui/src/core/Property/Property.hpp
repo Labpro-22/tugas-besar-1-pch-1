@@ -37,7 +37,6 @@ protected:
     static void printFullRow(ostringstream &out, const string &text);
     static void printCenteredRow(ostringstream &out, const string &text);
 
-    // virtual string makeHeaderTitle() const;
     void printHeader(ostringstream &out) const;
     void printBasicInfo(ostringstream &out) const;
     void printFooterStatus(ostringstream &out) const;
