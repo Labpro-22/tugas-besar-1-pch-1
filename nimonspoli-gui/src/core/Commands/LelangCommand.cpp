@@ -1,30 +1,24 @@
-#ifndef LELANGCOMMAND_HPP
-#define LELANGCOMMAND_HPP
+#include "LelangCommand.hpp"
+#include "../GameMaster/GameMaster.hpp"
+#include "../AuctionManager/AuctionManager.hpp"
+#include "../Property/Property.hpp"
+#include "../Player/Player.hpp"
 
-#include "Command.hpp"
+LelangCommand::LelangCommand(Property* property, Player* initiator)
+    : property(property), initiator(initiator) {}
 
-class Player;
-class Property;
+void LelangCommand::execute(GameMaster& gm) {
+    if (!property || !initiator) return;
 
-// ─────────────────────────────────────────────
-//  LelangCommand (Otomatis)
-//
-//  Dipicu oleh:
-//    1. BeliCommand saat pemain skip atau tidak mampu beli Street
-//    2. GameMaster::handleBankruptcy() saat pemain bangkrut ke Bank
-//
-//  execute() hanya melakukan setup + set phase ke AUCTION.
-//  Interaksi BID/PASS dan finalisasi (closeAuction) dihandle
-//  sepenuhnya oleh GUI (drawAuctionDialog).
-// ─────────────────────────────────────────────
-class LelangCommand : public Command {
-private:
-    Property* property;  // properti yang dilelang
-    Player*   initiator; // pemain yang memicu lelang (tidak ikut giliran pertama)
+    AuctionManager* am = gm.getState().getAuctionManager();
+    if (!am) return;
 
-public:
-    LelangCommand(Property* property, Player* initiator);
-    void execute(GameMaster& gm) override;
-};
+    // Setup urutan peserta; initiator tidak ikut di giliran pertama
+    am->setupAuction(property, initiator, gm.getState().getPlayers());
 
-#endif
+    gm.log(initiator->getUsername(), "LELANG",
+           "Lelang dimulai untuk " + property->getName());
+
+    // Set phase ke AUCTION — GUI mengambil alih dari sini
+    gm.getState().setPhase(GamePhase::AUCTION);
+}
