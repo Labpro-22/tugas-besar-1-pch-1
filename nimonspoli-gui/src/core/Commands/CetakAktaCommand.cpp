@@ -1,25 +1,23 @@
 #include "CetakAktaCommand.hpp"
-
-#include "../Property/StreetProperty.hpp"
-#include "../Property/RailroadProperty.hpp"
-#include "../Property/UtilityProperty.hpp"
+#include "../GameMaster/GameMaster.hpp"
+#include "../GameState/GameState.hpp"
+#include "../Property/Property.hpp"
 
 #include <iostream>
-#include <map>
 using namespace std;
 
-CetakAktaCommand::CetakAktaCommand(const Property *property)
-    : property(property)
+CetakAktaCommand::CetakAktaCommand(const string &kodePetak)
+    : kodePetak(kodePetak)
 {
 }
 
 void CetakAktaCommand::execute(GameMaster &gm)
 {
-    (void)gm;
+    Property *property = gm.getState().getPropertyByCode(kodePetak);
 
-    if (property == nullptr)
+    if (!property)
     {
-        cout << "Petak tidak ditemukan atau bukan properti.\n";
+        cout << "Petak \"" << kodePetak << "\" tidak ditemukan atau bukan properti.\n";
         return;
     }
 

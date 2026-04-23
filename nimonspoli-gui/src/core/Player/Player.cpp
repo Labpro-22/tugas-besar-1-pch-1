@@ -1,4 +1,6 @@
 #include "Player.hpp"
+#include "../Property/Property.hpp"
+#include <sstream>
 
 Player::Player(const std::string &username, int startingBalance) : username(username),
                                                                    balance(startingBalance),
@@ -216,4 +218,33 @@ int Player::getWealth() const
         total += p->getPurchasePrice();
     }
     return total;
+}
+
+string Player::cetakProperti() const
+{
+    ostringstream out;
+
+    out << "=== Properti Milik: " << getUsername() << " ===\n";
+
+    if (properties.empty())
+    {
+        out << "Kamu belum memiliki propreti apapun\n";
+        return out.str();
+    }
+
+    for (size_t i = 0; i < properties.size(); ++i)
+    {
+        if (properties[i] == nullptr)
+            continue;
+
+        out << "[" << i + 1 << "]\n";
+        out << properties[i]->cetakAkta();
+
+        if (i + 1 < properties.size())
+        {
+            out << "\n";
+        }
+    }
+
+    return out.str();
 }
