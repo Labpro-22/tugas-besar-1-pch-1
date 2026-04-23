@@ -300,7 +300,13 @@ bool JailTile::tryEscape(Player &p, Dice &d)
 // FIX #14: Bank:: Player butuh Player*, bukan Player&
 void JailTile::payFine(Player &p, Bank &b)
 {
+    if (p.getBalance() < jailFine) {
+        p.setStatus(PlayerStatus::BANKRUPT);
+        // Handle Bankrupt by Game Master
+    }
     p -= jailFine;
+    // Cek apakah player akan Bankrupt? <-- perlu dihandle?
+    
     release(p);
 }
 

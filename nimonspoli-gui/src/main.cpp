@@ -233,11 +233,13 @@ int main()
         // ── Game logic: flush command → sync dice ─────────────────────────
         gui.flushCommands();
 
-        if (gui.getCurrentScreen())
+        if (gui.getCurrentScreen()) 
         {
-            auto *gs = dynamic_cast<GameScreen *>(gui.getCurrentScreen());
-            if (gs)
-                gs->syncDiceResult();
+            auto* gs = dynamic_cast<GameScreen*>(gui.getCurrentScreen());
+            if (gs) gs->syncDiceResult();
+            if (gs && gameMaster && gameMaster->getState().getPhase() == GamePhase::GAME_OVER) {
+                gs->gameOver = true;
+            }
         }
 
         // ── COM auto-play ─────────────────────────────────────────────────
@@ -249,10 +251,13 @@ int main()
             if (com && state.getPhase() == GamePhase::PLAYER_TURN && !state.getHasRolled())
             {
                 com->executeTurn(*gameMaster);
-                gameMaster->endTurn();
-                gameMaster->beginTurn();
+                if (state.getPhase() != GamePhase::GAME_OVER)
+                    gameMaster->endTurn();
+                if (state.getPhase() != GamePhase::GAME_OVER) 
+                    gameMaster->beginTurn();
+
+                gui.clearCommands();
             }
-        }
 
         if (gui.getCurrentScreen())
         {

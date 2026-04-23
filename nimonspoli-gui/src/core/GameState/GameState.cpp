@@ -141,6 +141,7 @@ void GameState::nextPlayer()
     {
         currPlayerIdx = (currPlayerIdx + 1) % total;
         attempts++;
+        if (attempts >= total) return;
     } while (listPlayer[currPlayerIdx]->getStatus() == PlayerStatus::BANKRUPT && attempts < total);
 
     hasExtraTurn = false;
