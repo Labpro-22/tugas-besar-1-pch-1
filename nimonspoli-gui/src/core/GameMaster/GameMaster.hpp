@@ -112,6 +112,8 @@ public:
     // Log transaksi (shortcut agar Command tidak perlu akses logger langsung)
     void log(const std::string &username, const std::string &action, const std::string &detail);
 
+    void handleSkillCardOverflow(Player *player);
+    void giveSkillCardToPlayer(Player *player, SkillCard *card);
     void useSkillCard(Player *player, SkillCard *card, GameState &gs);
 };
 

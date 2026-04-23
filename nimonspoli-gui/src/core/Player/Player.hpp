@@ -69,13 +69,15 @@ public:
     const vector<Property *> &getProperties() const;
     int getPropertyCount() const;
 
-    // KARTU
+    // SKILL CARD
     bool addSkillCard(SkillCard *card);
     void discardSkillCard(int index);
     const vector<SkillCard *> &getHand() const;
     int getHandSize() const;
     void setCardUsedThisTurn(bool used);
     bool hasUsedCardThisTurn() const;
+    string printSkillCards() const;
+    void forceAddSkillCard(SkillCard *card);
 
     // JAIL
     void goToJail();

@@ -1,5 +1,6 @@
 #include "Player.hpp"
 #include "../Property/Property.hpp"
+#include "../Card/SkillCard.hpp"
 #include <sstream>
 #include <map>
 
@@ -116,7 +117,7 @@ int Player::getPropertyCount() const
     return properties.size();
 }
 
-// KARTU
+// SKILL CARD
 bool Player::addSkillCard(SkillCard *card)
 {
     if (skillCards.size() >= 3)
@@ -150,6 +151,33 @@ void Player::setCardUsedThisTurn(bool used)
 bool Player::hasUsedCardThisTurn() const
 {
     return cardUsedThisTurn;
+}
+
+void Player::forceAddSkillCard(SkillCard *card)
+{
+    if (card == nullptr)
+        return;
+
+    skillCards.push_back(card);
+}
+
+string Player::printSkillCards() const
+{
+    ostringstream out;
+
+    out << "Daftar Kartu Kemampuan Anda: \n";
+    for (size_t i = 0; i < skillCards.size(); ++i)
+    {
+        if (skillCards[i] == nullptr)
+            continue;
+
+        out << (i + 1) << ". "
+            << skillCards[i]->getType()
+            << " - "
+            << skillCards[i]->getDescription() << "\n";
+    }
+
+    return out.str();
 }
 
 // JAIL

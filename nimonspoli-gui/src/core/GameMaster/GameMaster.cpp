@@ -11,6 +11,7 @@
 #include <iostream>
 #include <algorithm>
 #include <stdexcept>
+#include <limits>
 
 // ─────────────────────────────────────────────
 //  Konstruktor
@@ -677,6 +678,72 @@ void GameMaster::checkWinCondition()
     }
 
     // Kondisi 3: maxTurn < 1 → mode BANKRUPTCY, game terus tanpa batas
+}
+
+void GameMaster::handleSkillCardOverflow(Player *player)
+{
+    if (player == nullptr)
+        return;
+
+    while (player->getHandSize() > 3)
+    {
+        cout << "PERINGATAN: Kamu sudah memiliki "
+             << player->getHandSize()
+             << " kartu di tangan (Maksimal 3)! "
+             << "Kamu diwajibkan membuang 1 kartu.\n\n";
+
+        cout << player->printSkillCards() << "\n";
+
+        int pilihan;
+        while (true)
+        {
+            cout << "Pilih nomor kartu yang ingin dibuang (1-"
+                 << player->getHandSize() << "): ";
+
+            if (!(cin >> pilihan))
+            {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Input tidak valid. Masukkan angka.\n";
+                continue;
+            }
+
+            if (pilihan < 1 || pilihan > player->getHandSize())
+            {
+                cout << "Pilihan di luar rentang.\n";
+                continue;
+            }
+
+            break;
+        }
+
+        SkillCard *kartuDibuang = player->getHand()[pilihan - 1];
+        string namaKartu = kartuDibuang ? kartuDibuang->getType() : "Kartu";
+
+        player->discardSkillCard(pilihan - 1);
+
+        cout << "\n"
+             << namaKartu << " telah dibuang. "
+             << "Sekarang kamu memiliki "
+             << player->getHandSize()
+             << " kartu di tangan.\n";
+    }
+}
+
+void GameMaster::giveSkillCardToPlayer(Player *player, SkillCard *card)
+{
+    if (player == nullptr || card == nullptr)
+        return;
+
+    cout << "Kamu mendapatkan 1 kartu acak baru!\n";
+    cout << "Kartu yang didapat: " << card->getType() << ".\n";
+
+    player->forceAddSkillCard(card);
+
+    if (player->getHandSize() > 3)
+    {
+        handleSkillCardOverflow(player);
+    }
 }
 
 void GameMaster::useSkillCard(Player *player, SkillCard *card, GameState &gs)
