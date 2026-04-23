@@ -405,15 +405,18 @@ void MainMenuScreen::drawLeftPanel()
 // ─── drawRightPanel ───────────────────────────────────────────────────────────
 void MainMenuScreen::drawRightPanel()
 {
-    int titleBottom = 40 + 130 + 46;
-    float rx = SCREEN_W / 2.f + 60;
-    float rw = SCREEN_W / 2.f - 120;
+    int screenW = SW();
+    int screenH = SH();
+
+    int titleBottom = 40 + std::min(130, screenW / 10) + 46;
+    float rx = screenW / 2.f + 60;
+    float rw = screenW / 2.f - 120;
     float top = (float)titleBottom + 10;
 
-    DrawRectangle(SCREEN_W / 2, titleBottom, SCREEN_W / 2, SCREEN_H - titleBottom, {16, 17, 28, 255});
+    DrawRectangle(screenW / 2, titleBottom, screenW / 2, screenH - titleBottom, {16, 17, 28, 255});
 
     float ry = top + 20;
-    float totalH = SCREEN_H - ry - 40;
+    float totalH = screenH - ry - 40;
 
     float loadH = totalH * 0.20f;
     float gap1 = totalH * 0.04f;
@@ -633,11 +636,13 @@ void MainMenuScreen::drawError()
 {
     if (errorTimer <= 0 || errorMsg.empty())
         return;
+    int screenW = SW();
+    int screenH = SH();
     float alpha = std::min(1.f, errorTimer);
     Color errC = {226, 75, 74, (unsigned char)(255 * alpha)};
     int ew = MeasureText(errorMsg.c_str(), 18);
-    float ex = SCREEN_W / 2.f - ew / 2.f;
-    float ey = SCREEN_H - 52;
+    float ex = screenW / 2.f - ew / 2.f;
+    float ey = screenH - 52;
     DrawRectangle((int)(ex - 16), (int)(ey - 10), ew + 32, 40, {40, 10, 10, (unsigned char)(200 * alpha)});
     DrawRectangleLinesEx({ex - 16, ey - 10, (float)(ew + 32), 40}, 1, errC);
     DrawText(errorMsg.c_str(), (int)ex, (int)ey, 18, errC);

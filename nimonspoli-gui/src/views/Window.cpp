@@ -21,7 +21,7 @@ void Window::beginFrame()
     ClearBackground({245, 240, 232, 255});
 } // Warna background}
 void Window::endFrame() { EndDrawing(); }
-int Window::getWidth() const { return width; }
-int Window::getHeigth() const { return height; }
+int Window::getWidth() const { return GetScreenWidth(); }
+int Window::getHeigth() const { return GetScreenHeight(); }
 const string &Window::getTitle() const { return title; }
 int Window::getFPS() const { return targetFPS; }
