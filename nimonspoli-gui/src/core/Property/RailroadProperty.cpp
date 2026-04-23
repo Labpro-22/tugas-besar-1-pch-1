@@ -12,6 +12,11 @@ RailroadProperty::~RailroadProperty()
 {
 }
 
+const map<int, int> &RailroadProperty::getRentFactor() const
+{
+    return rentFactor;
+}
+
 int RailroadProperty::calculateRentPrice(int diceRoll,
                                          int ownerSameColorCount,
                                          bool monopoly) const

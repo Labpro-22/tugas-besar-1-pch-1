@@ -15,6 +15,8 @@ public:
     RailroadProperty(int id, const string &code, const string &name, const string &colorGroup, int purchasePrice, int mortageValue, const string &ownerId, map<int, int> rentFactor);
     ~RailroadProperty();
 
+    const map<int, int> &getRentFactor() const;
+
     int calculateRentPrice(int diceRoll,
                            int ownerSameColorCount,
                            bool monopoly) const override;

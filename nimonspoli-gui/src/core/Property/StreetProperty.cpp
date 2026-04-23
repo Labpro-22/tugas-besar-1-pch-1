@@ -12,6 +12,11 @@ StreetProperty::~StreetProperty()
 {
 }
 
+const map<int, int> &StreetProperty::getRentPrice() const
+{
+    return rentPrice;
+}
+
 int StreetProperty::getHouseUpgCost() const
 {
     return houseUpgCost;
@@ -200,7 +205,8 @@ string StreetProperty::formattingTXT() const
            bangunanStr;
 }
 
-void StreetProperty::resetBuildings(){
+void StreetProperty::resetBuildings()
+{
     buildingCount = 0;
     hasHotel = false;
 }

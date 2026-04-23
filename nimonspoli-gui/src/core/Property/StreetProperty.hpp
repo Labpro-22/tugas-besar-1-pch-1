@@ -27,6 +27,7 @@ public:
 
     int getHouseUpgCost() const;
     int getHotelUpgCost() const;
+    const map<int, int> &getRentPrice() const;
     int getBuildingCount() const;
     bool gethasHotel() const;
     int getFestivalMultiplier() const;

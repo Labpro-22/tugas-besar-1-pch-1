@@ -12,6 +12,11 @@ UtilityProperty::~UtilityProperty()
 {
 }
 
+const map<int, int> &UtilityProperty::getRentPrice() const
+{
+    return rentPrice;
+}
+
 int UtilityProperty::calculateRentPrice(int diceRoll,
                                         int ownerSameColorCount,
                                         bool monopoly) const
