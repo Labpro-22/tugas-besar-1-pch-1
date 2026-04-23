@@ -8,7 +8,7 @@ BIN_DIR := bin
 TARGET  := $(BIN_DIR)/nimonspoli
 
 ifeq ($(OS),Windows_NT)
-    LDFLAGS += -L lib/raylib/lib -lopengl32 -lgdi32 -lwinmm -lglfw3
+    LDFLAGS += -lopengl32 -lgdi32 -lwinmm
 else
     LDFLAGS += -lGL -lm -lpthread -ldl -lrt -lX11
     TARGET  := $(BIN_DIR)/nimonspoli

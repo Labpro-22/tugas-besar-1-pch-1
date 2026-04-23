@@ -17,7 +17,6 @@ class Property;
 
 // CardDeck adalah template class — tidak bisa forward declare, harus include
 #include "../Card/CardDeck.hpp"
-#include "../utils/ConfigLoader.hpp"
 
 // ─────────────────────────────────────────────
 //  Enum fase permainan
@@ -25,15 +24,12 @@ class Property;
 enum class GamePhase
 {
     NOT_STARTED,
-    PLAYER_TURN,       // menunggu input pemain (sebelum lempar dadu)
-    DICE_ROLLED,       // sudah lempar dadu, menunggu resolusi petak
-    AWAITING_BUY,      // menunggu keputusan beli properti
-    AWAITING_TAX,      // menunggu pilihan user untuk PPH (flat vs persen)
-    AWAITING_FESTIVAL, // menunggu user pilih properti festival
-    SHOW_CARD,         // menampilkan hasil kartu Kesempatan/Dana Umum
-    AUCTION,           // lelang sedang berjalan
-    BANKRUPTCY,        // proses likuidasi/kebangkrutan
-    GAME_OVER          // permainan selesai
+    PLAYER_TURN,  // menunggu input pemain (sebelum lempar dadu)
+    DICE_ROLLED,  // sudah lempar dadu, menunggu resolusi petak
+    AWAITING_BUY, // menunggu keputusan beli properti
+    AUCTION,      // lelang sedang berjalan
+    BANKRUPTCY,   // proses likuidasi/kebangkrutan
+    GAME_OVER     // permainan selesai
 };
 
 // ─────────────────────────────────────────────
@@ -56,7 +52,6 @@ private:
     bool hasUsedCard;                 // sudah pakai skill card giliran ini?
 
     // ── Entitas inti ────────────────────────────
-<<<<<<< HEAD
     Board *gameBoard;
     Bank *gameBank;
     Dice *gameDice;
@@ -66,34 +61,12 @@ private:
     CardDeck<Card> *skillCardDeck;
     TransactionLogger *logger;
     GameMaster *gameMaster;
-    == == == =
-                 Board * gameBoard;
-    Bank *gameBank;
-    Dice *gameDice;
-    AuctionManager *auctionManager;
-    CardDeck<Card> *chanceCardDeck;
-    CardDeck<Card> *communityCardDeck;
-    CardDeck<Card> *skillCardDeck;
-    TransactionLogger *logger;
-    GameMaster *gameMaster;
-    TaxConfig taxcfg;
-
-    // ── Pending data untuk GUI dialog ────────────
-    // Untuk SHOW_CARD (CardDialog)
-    std::string pendingCardDesc; // deskripsi kartu yang ditarik
-    std::string pendingCardDeck; // "Kesempatan" atau "Dana Umum"
-
-    // Untuk AWAITING_TAX (TaxDialog — PPH saja)
-    int pendingPphFlat = 0; // jumlah flat M
-    int pendingPphPct = 0;  // persentase %
->>>>>>> origin/gs2
 
 public:
     // ── Konstruktor & destruktor ─────────────────
     GameState();
     GameState(
         int maxTurn,
-<<<<<<< HEAD
         std::vector<Player *> listPlayer,
         Board *board,
         Bank *bank,
@@ -103,95 +76,54 @@ public:
         CardDeck<Card> *communityDeck,
         CardDeck<Card> *skillDeck,
         TransactionLogger *logger);
-=======
-        std::vector<Player*> listPlayer,
-        Board*              board,
-        Bank*               bank,
-        Dice*               dice,
-        AuctionManager*     auctionMgr,
-        CardDeck<Card>*     chanceDeck,
-        CardDeck<Card>*     communityDeck,
-        CardDeck<Card>*     skillDeck,
-        TransactionLogger*  logger,
-        TaxConfig taxcfg
-    );
->>>>>>> origin/gs2
-~GameState() = default;
+    ~GameState() = default;
 
-// ── Getter: turn & fase ─────────────────────
-int getCurrTurn() const;
-int getMaxTurn() const;
-GamePhase getPhase() const;
-bool isGameOver() const;
+    // ── Getter: turn & fase ─────────────────────
+    int getCurrTurn() const;
+    int getMaxTurn() const;
+    GamePhase getPhase() const;
+    bool isGameOver() const;
 
-// ── Getter: pemain ───────────────────────────
-Player *getCurrPlayer() const; // pemain aktif saat ini
-int getCurrPlayerIdx() const;
-std::vector<Player *> getPlayers() const;
-std::vector<Player *> getActivePlayers() const; // exclude BANKRUPT
-Player *getPlayerById(const std::string &id) const;
-int getPlayerCount() const;
-bool getHasExtraTurn() const;
-bool getHasRolled() const;
-bool getHasUsedCard() const;
+    // ── Getter: pemain ───────────────────────────
+    Player *getCurrPlayer() const; // pemain aktif saat ini
+    int getCurrPlayerIdx() const;
+    std::vector<Player *> getPlayers() const;
+    std::vector<Player *> getActivePlayers() const; // exclude BANKRUPT
+    Player *getPlayerById(const std::string &id) const;
+    int getPlayerCount() const;
+    bool getHasExtraTurn() const;
+    bool getHasRolled() const;
+    bool getHasUsedCard() const;
 
-// ── Getter: entitas ──────────────────────────
-<<<<<<< HEAD
-Board *getBoard() const;
-Property *getPropertyByCode(const std::string &code) const;
-Bank *getBank() const;
-Dice *getDice() const;
-AuctionManager *getAuctionManager() const;
-CardDeck<Card> *getChanceDeck() const;
-CardDeck<Card> *getCommunityDeck() const;
-CardDeck<Card> *getSkillDeck() const;
-TransactionLogger *getLogger() const;
-GameMaster *getGameMaster() const;
-== == == =
-             Board * getBoard() const;
-Bank *getBank() const;
-Dice *getDice() const;
-AuctionManager *getAuctionManager() const;
-CardDeck<Card> *getChanceDeck() const;
-CardDeck<Card> *getCommunityDeck() const;
-CardDeck<Card> *getSkillDeck() const;
-TransactionLogger *getLogger() const;
-GameMaster *getGameMaster() const;
-TaxConfig getTaxConfig() const;
->>>>>>> origin/gs2
+    // ── Getter: entitas ──────────────────────────
+    Board *getBoard() const;
+    Property *getPropertyByCode(const std::string &code) const;
+    Bank *getBank() const;
+    Dice *getDice() const;
+    AuctionManager *getAuctionManager() const;
+    CardDeck<Card> *getChanceDeck() const;
+    CardDeck<Card> *getCommunityDeck() const;
+    CardDeck<Card> *getSkillDeck() const;
+    TransactionLogger *getLogger() const;
+    GameMaster *getGameMaster() const;
 
-// ── Setter: turn & fase ─────────────────────
-void setPhase(GamePhase p);
-void setHasExtraTurn(bool val);
-void setHasRolled(bool val);
-void setHasUsedCard(bool val);
+    // ── Setter: turn & fase ─────────────────────
+    void setPhase(GamePhase p);
+    void setHasExtraTurn(bool val);
+    void setHasRolled(bool val);
+    void setHasUsedCard(bool val);
 
-// ── Setter: navigasi giliran ─────────────────
-void advanceTurn();           // naikkan currTurn, reset flag giliran
-void nextPlayer();            // pindah ke pemain aktif berikutnya
-void removePlayer(Player *p); // keluarkan pemain bankrut dari urutan
-void setCurrTurn(int t);
-void setCurrPlayerIdx(int idx);
-void setMaxTurn(int m);
-void setGameMaster(GameMaster *gm);
+    // ── Setter: navigasi giliran ─────────────────
+    void advanceTurn();           // naikkan currTurn, reset flag giliran
+    void nextPlayer();            // pindah ke pemain aktif berikutnya
+    void removePlayer(Player *p); // keluarkan pemain bankrut dari urutan
+    void setCurrTurn(int t);
+    void setCurrPlayerIdx(int idx);
+    void setMaxTurn(int m);
+    void setGameMaster(GameMaster *gm);
 
-// ── Helper ───────────────────────────────────
-bool isMaxTurnReached() const;
-<<<<<<< HEAD
-int countActivePlayers() const;
-== == == =
-             int countActivePlayers() const;
-
-// ── Getter/Setter pending dialog data ────────
-const std::string &getPendingCardDesc() const { return pendingCardDesc; }
-const std::string &getPendingCardDeck() const { return pendingCardDeck; }
-int getPendingPphFlat() const { return pendingPphFlat; }
-int getPendingPphPct() const { return pendingPphPct; }
-
-void setPendingCardDesc(const std::string &s) { pendingCardDesc = s; }
-void setPendingCardDeck(const std::string &s) { pendingCardDeck = s; }
-void setPendingPphFlat(int v) { pendingPphFlat = v; }
-void setPendingPphPct(int v) { pendingPphPct = v; }
->>>>>>> origin/gs2
+    // ── Helper ───────────────────────────────────
+    bool isMaxTurnReached() const;
+    int countActivePlayers() const;
 };
 #endif

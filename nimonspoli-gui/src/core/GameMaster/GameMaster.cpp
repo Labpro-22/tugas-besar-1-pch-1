@@ -122,16 +122,22 @@ void GameMaster::movePlayer(Player *player, int steps)
     Board *board = state.getBoard();
 
     int curIdx = player->getPosition();
-    int boardSize = state.getBoard()->getSize();
+    int goIdx = 1; // GO selalu di id=1
 
-    int targetIdx = (curIdx + steps) % boardSize;
+    // Hitung target — wrap dalam range 1..40
+    int targetIdx = curIdx + steps;
+    bool passedGo = false;
 
-    // detect pass GO (GO = index 0)
-    bool passedGo = (curIdx + steps) >= boardSize;
+    if (targetIdx > 40)
+    {
+        targetIdx = ((targetIdx - 1) % 40) + 1; // wrap 1-40
+        passedGo = true;
+    }
 
+    // Bayar gaji GO
     if (passedGo)
     {
-        Tile *goTile = board->getTile(0);
+        Tile *goTile = board->getTile(goIdx);
         GoTile *go = dynamic_cast<GoTile *>(goTile);
         if (go)
         {
@@ -139,9 +145,9 @@ void GameMaster::movePlayer(Player *player, int steps)
             log(player->getUsername(), "GO_SALARY",
                 "Melewati GO, menerima M" + std::to_string(go->getSalary()));
         }
-}
+    }
 
-player->setPosition(targetIdx);
+    player->setPosition(targetIdx);
 
     Tile *landedTile = board->getTile(targetIdx);
     if (landedTile)
@@ -210,7 +216,6 @@ JailTile *GameMaster::findJailTile() const
 
 int GameMaster::findJailIndex() const
 {
-    
     Board *board = state.getBoard();
     if (!board)
         return -1;
@@ -222,21 +227,12 @@ int GameMaster::findJailIndex() const
     return -1;
 }
 
-void GameMaster::sendPlayerToJail(Player* player)
+void GameMaster::sendPlayerToJail(Player *player)
 {
-    if (!player) return;
+    if (!player)
+        return;
 
-    int jailIdx = findJailIndex();
-    if (jailIdx >= 0)
-        player->setPosition(jailIdx);
-
-    Dice* dice = state.getDice();
-    if (dice)
-        dice->resetConsecutiveDoubles(); // FIX
-
-    state.setHasRolled(true); // FIX: stop movement
-
-    JailTile* jail = findJailTile();
+    JailTile *jail = findJailTile();
     if (jail)
     {
         jail->sendToJail(*player);
@@ -244,6 +240,7 @@ void GameMaster::sendPlayerToJail(Player* player)
             player->getUsername() + " dimasukkan ke penjara!");
     }
 
+    // flag JAILED sudah di-set oleh JailTile::sendToJail()
     endCurrentTurn();
 }
 
@@ -271,9 +268,9 @@ void GameMaster::setExtraTurn(bool val)
 void GameMaster::endCurrentTurn()
 {
     state.setHasExtraTurn(false);
-    state.setHasRolled(true);  // block: pemain tidak bisa lempar dadu lagi
     state.setPhase(GamePhase::PLAYER_TURN);
-    // nextPlayer() dan advanceTurn() tetap dilakukan oleh endTurn()
+    // Paksa pindah ke pemain berikutnya
+    state.nextPlayer();
 }
 
 bool GameMaster::hasExtraTurn() const
@@ -312,26 +309,41 @@ void GameMaster::startAuction(Property *prop, Player *triggerPlayer)
         return;
 
     AuctionManager *am = state.getAuctionManager();
-    if (!am)
-        return;
-
     std::vector<Player *> all = state.getActivePlayers();
-    if (all.empty())
-        return;
 
-    // Kasus bangkrut ke Bank: triggerPlayer == nullptr
-    // Gunakan pemain aktif pertama sebagai initiator agar urutan tetap valid;
-    // AuctionManager::setupAuction() akan menyusun urutan mulai dari setelahnya.
-    Player *initiator = triggerPlayer ? triggerPlayer : all.front();
+    // Susun urutan lelang: mulai dari pemain setelah trigger
+    std::vector<Player *> participants;
+    if (triggerPlayer)
+    {
+        auto it = std::find(all.begin(), all.end(), triggerPlayer);
+        if (it != all.end())
+        {
+            ++it;
+            while (it != all.end())
+            {
+                participants.push_back(*it++);
+            }
+            it = all.begin();
+            while (*it != triggerPlayer)
+            {
+                participants.push_back(*it++);
+            }
+        }
+    }
+    else
+    {
+        participants = all;
+    }
 
-    // Logika urutan peserta sepenuhnya diserahkan ke AuctionManager::setupAuction()
-    am->setupAuction(prop, initiator, all); 
+    am->setupAuction(prop, participants);
     state.setPhase(GamePhase::AUCTION);
-
-    // Proses lelang akan berjalan di GUI
 
     log("SYSTEM", "AUCTION_START",
         "Lelang dimulai untuk " + prop->getName());
+
+    // Loop lelang — setiap giliran pemain: BID atau PASS
+    // (Detail interaksi I/O dilakukan oleh LelangCommand)
+    // GameMaster hanya menyediakan am->placeBid() dan am->closeAuction()
 }
 
 // ─────────────────────────────────────────────
@@ -362,7 +374,7 @@ void GameMaster::handleDebtPayment(Player *debtor, int debt, Player *creditor)
     }
 
     // Tidak cukup cash → cek potensi likuidasi
-    int potential = debtor->getWealth();
+    int potential = calculateWealth(debtor);
     if (potential >= debt)
     {
         // Wajib likuidasi — BangkrutCommand yang handle panel likuidasi
@@ -433,7 +445,7 @@ void GameMaster::handleBankruptcy(Player *from, Bank *bank)
     int remaining = from->getBalance();
     if (remaining > 0)
     {
-        *from -= remaining;
+        from -= remaining;
     }
 
     // Semua properti kembali ke BANK dan dilelang
@@ -578,7 +590,21 @@ int GameMaster::findNearestRailroad(int currentPosition) const
     return -1;
 }
 
-
+int GameMaster::calculateWealth(Player *player) const
+{
+    if (!player)
+        return 0;
+    int wealth = player->getBalance();
+    for (int i = 0; i < player->getPropertyCount(); i++)
+    {
+        Property *p = player->getProperties()[i];
+        if (p)
+            wealth += static_cast<int>(p->getPurchasePrice());
+        // Nilai bangunan ditambahkan oleh StreetProperty::calculateSellPrice()
+        // jika ada override — di sini gunakan purchasePrice sebagai baseline
+    }
+    return wealth;
+}
 
 void GameMaster::log(const std::string &username,
                      const std::string &action,
@@ -617,19 +643,21 @@ void GameMaster::distributeSkillCards()
 
 void GameMaster::tickFestivalDurations()
 {
-    for (Player* p : state.getActivePlayers())
-    {
-        for (int i = 0; i < p->getPropertyCount(); i++)
-        {
-            Property* prop = p->getProperties()[i];
-            if (!prop) continue;
+    // Kurangi durasi festival untuk semua properti milik pemain aktif
+    // StreetProperty harus punya method tickFestival() / decreaseFestivalDuration()
+    Player *cur = state.getCurrPlayer();
+    if (!cur)
+        return;
 
-            auto* sp = dynamic_cast<StreetProperty*>(prop);
-            if (sp)
-            {
-                sp->decrementFestivalDuration();
-            }
-        }
+    for (int i = 0; i < cur->getPropertyCount(); i++)
+    {
+        Property *p = cur->getProperties()[i];
+        if (!p)
+            continue;
+        // Cast ke StreetProperty jika ada method festivalnya
+        // StreetProperty* sp = dynamic_cast<StreetProperty*>(p);
+        // if (sp) sp->tickFestival();
+        // → Uncomment setelah StreetProperty diimplementasi
     }
 }
 

@@ -28,14 +28,14 @@ GameState::GameState(
     CardDeck<Card> *chanceDeck,
     CardDeck<Card> *communityDeck,
     CardDeck<Card> *skillDeck,
-    TransactionLogger *log, TaxConfig taxcfg)
+    TransactionLogger *log)
     : currTurn(1), maxTurn(maxTurn), phase(GamePhase::NOT_STARTED),
       listPlayer(players), currPlayerIdx(0),
       hasExtraTurn(false), hasRolled(false), hasUsedCard(false),
       gameBoard(board), gameBank(bank), gameDice(dice),
       auctionManager(auctionMgr),
       chanceCardDeck(chanceDeck), communityCardDeck(communityDeck), skillCardDeck(skillDeck),
-      logger(log), taxcfg(taxcfg) {}
+      logger(log) {}
 
 // ─────────────────────────────────────────────
 //  Getter: turn & fase
@@ -107,7 +107,6 @@ CardDeck<Card> *GameState::getCommunityDeck() const { return communityCardDeck; 
 CardDeck<Card> *GameState::getSkillDeck() const { return skillCardDeck; }
 TransactionLogger *GameState::getLogger() const { return logger; }
 GameMaster *GameState::getGameMaster() const { return gameMaster; }
-TaxConfig GameState::getTaxConfig() const {return taxcfg;}
 
 // ─────────────────────────────────────────────
 //  Setter

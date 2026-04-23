@@ -11,7 +11,6 @@
 #include "../Property/PropertyFactory.hpp"
 #include "../Property/UtilityProperty.hpp"
 
-#include "../ComputerPlayer/ComputerPlayer.hpp"
 #include "../Card/CardDeck.hpp"
 #include "../Card/CardFactory.hpp"
 #include "../Card/SkillCard.hpp"
@@ -100,64 +99,69 @@ void SaveLoadManager::save(const GameState &state, const string &filename)
     out.close();
 }
 
-// ─── savePlayers ─────────────────────────────────────────────────────────────
+// SavePlayers
 /*
-<USERNAME> <UANG> <POSISI_PETAK> <STATUS> <HUMAN/COM> [DIFFICULTY]
+<USERNAME> <UANG> <POSISI_PETAK> <STATUS>
 <JUMLAH_KARTU_TANGAN>
-<JENIS_KARTU_1> [NILAI] [DURASI]
+<JENIS_KARTU_1> <NILAI_KARTU_1> <SISA_DURASI_1>
+<JENIS_KARTU_2> <NILAI_KARTU_2> <SISA_DURASI_2>
 */
-void SaveLoadManager::savePlayers(ofstream& out, const GameState& state) {
-    for (auto& p : state.getPlayers()) {
-        // Status string
+void SaveLoadManager::savePlayers(ofstream &out, const GameState &state)
+{
+    for (auto &p : state.getPlayers())
+    {
         string statusStr;
-        switch (p->getStatus()) {
-            case PlayerStatus::ACTIVE:   statusStr = "ACTIVE";   break;
-            case PlayerStatus::JAILED:   statusStr = "JAILED";   break;
-            case PlayerStatus::BANKRUPT: statusStr = "BANKRUPT"; break;
+        switch (p->getStatus())
+        {
+        case PlayerStatus::ACTIVE:
+            statusStr = "ACTIVE";
+            break;
+        case PlayerStatus::JAILED:
+            statusStr = "JAILED";
+            break;
+        case PlayerStatus::BANKRUPT:
+            statusStr = "BANKRUPT";
+            break;
         }
 
-        // Kode petak posisi saat ini
-        string tileCode = "GO";
-        if (state.getBoard()) {
-            std::cout << "[DEBUG save] " << p->getUsername()
-                    << " getPosition()=" << p->getPosition()
-                    << " boardSize=" << state.getBoard()->getSize() << std::endl;
-            Tile* t = state.getBoard()->getTile(p->getPosition());
-            std::cout << "[DEBUG save] tile=" << (t ? t->getCode() : "null") << std::endl;
-            if (t) tileCode = t->getCode();
+        string tileCode = "GO"; // <- default aja
+        if (state.getBoard())
+        {
+            Tile *t = state.getBoard()->getTile((p->getPosition()));
+            if (t)
+            {
+                tileCode = t->getCode();
+            }
         }
 
-        // <USERNAME> <UANG> <POSISI_PETAK> <STATUS> <HUMAN/COM> [DIFFICULTY]
-        out << p->getUsername() << " "
-            << p->getBalance()  << " "
-            << tileCode         << " "
-            << statusStr;
-
-        // Flag COM atau HUMAN
-        ComputerPlayer* cp = dynamic_cast<ComputerPlayer*>(p);
-        if (cp)
-            out << " COM " << difficultyToString(cp->getDifficulty());
-        else
-            out << " HUMAN";
-
-        out << "\n";
+        // <USERNAME> <UANG> <POSISI_PETAK> <STATUS>
+        out << p->getUsername() << " " << p->getBalance() << " " << tileCode << " " << statusStr << "\n";
 
         // <JUMLAH_KARTU_TANGAN>
         auto &hand = p->getHand();
         out << hand.size() << "\n";
 
-        // <JENIS_KARTU> [NILAI] [DURASI]
-        for (auto* card : hand) {
-            out << card->getType();
-            if (auto* mc = dynamic_cast<MoveCard*>(card))
-                out << " " << mc->getSteps();
-            else if (auto* dc = dynamic_cast<DiscountCard*>(card))
+        // <JENIS_KARTU_1> <NILAI_KARTU_1> <SISA_DURASI_1>
+        for (auto *card : hand)
+        {
+            string type = card->getType();
+
+            out << type;
+            if (auto *dc = dynamic_cast<MoveCard *>(card))
+            {
+                // Move Card: simpan gerak
+                out << " " << dc->getSteps();
+            }
+            else if (auto *dc = dynamic_cast<DiscountCard *>(card))
+            {
+                // Discount Card: persentase + durasi
                 out << " " << dc->getDiscountPercent() << " " << dc->getDuration();
+            }
+
             out << "\n";
         }
     }
 }
-
 
 // SaveProperties
 /*
@@ -404,12 +408,11 @@ void SaveLoadManager::loadPlayers(std::ifstream &in, GameState &state)
             *p -= (-diff);
 
         // Posisi
-        if (state.getBoard()) {
+        if (state.getBoard())
+        {
             int idx = state.getBoard()->findTileIndexByCode(tok[2]);
-            std::cout << "[DEBUG load] " << tok[0] 
-                    << " tileCode=" << tok[2] 
-                    << " idx=" << idx << std::endl;
-            if (idx > 0) p->setPosition(idx);
+            if (idx >= 0)
+                p->setPosition(idx);
         }
 
         // Status

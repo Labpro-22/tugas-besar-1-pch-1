@@ -12,13 +12,6 @@
 #include "../Card/CardDeck.hpp"
 #include "../Card/Card.hpp"
 #include "../GameMaster/GameMaster.hpp"
-#include "../Commands/BayarPajakCommand.hpp"
-#include "../Commands/FestivalCommand.hpp"
-#include "../Commands/CardCommand.hpp"
-#include "../GameState/GameState.hpp"
-#include "../Exceptions/FinancialException.hpp"
-#include "../GameMaster/GameMaster.hpp"
-
 using namespace std;
 
 // ─────────────────────────────────────────────
@@ -71,7 +64,7 @@ private:
     int size;
 public:
     Board(const vector<Tile*>& tiles, int size);
-    ~Board();
+    ~Board() = default;
     Tile* getTile(int idx)                       const;
     Tile* getNextTile(int cur, int steps)        const;
     int   getSize()                              const;
