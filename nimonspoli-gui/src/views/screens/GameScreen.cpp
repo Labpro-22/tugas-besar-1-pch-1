@@ -530,7 +530,7 @@ void GameScreen::handleInput()
     if (IsKeyPressed(KEY_W))
         gameOver = true;
 
-    Vector2 mouse = GetMousePosition();
+    Vector2 mouse = {GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())};
 
     float cx1 = boardX + CORNER_SZ;
     float cx2 = boardX + CORNER_SZ + 9 * TILE_W;
@@ -1016,7 +1016,7 @@ void GameScreen::drawRightPanel()
         {"END TURN", {80, 100, 160, 255}},
     };
 
-    Vector2 mouse = GetMousePosition();
+    Vector2 mouse = {GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())};
     for (int i = 0; i < 8; i++)
     {
         Rectangle btn = {rx + 10, 140.f + i * 44, RIGHT_PANEL - 20, 36};
@@ -1112,7 +1112,7 @@ void GameScreen::drawRightPanel()
     Rectangle logBtn = {rx + 10, (float)SCREEN_H - 70, RIGHT_PANEL - 20, 32};
     DrawRectangleRec(logBtn, {40, 42, 54, 255});
     DrawRectangleLinesEx(logBtn, 1, {100, 100, 160, 255});
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), logBtn))
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, logBtn))
         showLogPopup = !showLogPopup;
     int lw = MeasureText("LOG TRANSAKSI", 11);
     DrawText("LOG TRANSAKSI", (int)(rx + RIGHT_PANEL / 2 - lw / 2), SCREEN_H - 58, 11, {150, 150, 200, 255});
@@ -1209,7 +1209,7 @@ void GameScreen::drawPopup()
         int tw = MeasureText(pbts[i].lbl, 12);
         DrawText(pbts[i].lbl, (int)(b.x + btnW / 2 - tw / 2), (int)(btnY + 11), 12, WHITE);
         if (i == 0 && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
-            CheckCollisionPointRec(GetMousePosition(), b))
+            CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, b))
         {
             showPopup = false;
             selectedTile = -1;
@@ -1310,7 +1310,7 @@ void GameScreen::drawSavePopup()
 
     // Tombol X
     Rectangle xBtn = {px + PW - 36, py + 8, 28, 28};
-    bool xHov = CheckCollisionPointRec(GetMousePosition(), xBtn);
+    bool xHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, xBtn);
     DrawRectangleRec(xBtn, xHov ? Color{180, 60, 60, 255} : Color{110, 40, 40, 255});
     DrawText("X", (int)(xBtn.x + 9), (int)(xBtn.y + 8), 12, WHITE);
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && xHov)
@@ -1328,7 +1328,7 @@ void GameScreen::drawSavePopup()
 
         // Input box
         Rectangle inputBox = {px + 20, py + 84, PW - 100, 38};
-        // bool inputHov = CheckCollisionPointRec(GetMousePosition(), inputBox);
+        // bool inputHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, inputBox);
         DrawRectangleRec(inputBox, {28, 30, 46, 255});
         DrawRectangleLinesEx(inputBox, 1.5f, {100, 100, 200, 255});
 
@@ -1360,7 +1360,7 @@ void GameScreen::drawSavePopup()
 
         // Tombol SIMPAN
         Rectangle okBtn = {px + PW - 110, py + 84, 86, 38};
-        bool okHov = CheckCollisionPointRec(GetMousePosition(), okBtn);
+        bool okHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, okBtn);
         DrawRectangleRec(okBtn, okHov ? Color{50, 100, 180, 255} : Color{35, 70, 130, 255});
         DrawRectangleLinesEx(okBtn, 1, {80, 130, 220, 255});
         int sw = MeasureText("SIMPAN", 12);
@@ -1427,7 +1427,7 @@ void GameScreen::drawSavePopup()
 
         // YA
         Rectangle yaBtn = {px + 60, py + 136, 140, 44};
-        bool yaHov = CheckCollisionPointRec(GetMousePosition(), yaBtn);
+        bool yaHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, yaBtn);
         DrawRectangleRec(yaBtn, yaHov ? Color{60, 180, 90, 255} : Color{40, 120, 60, 255});
         DrawRectangleLinesEx(yaBtn, 1, {80, 220, 120, 255});
         int yw = MeasureText("YA, TIMPA", 13);
@@ -1435,7 +1435,7 @@ void GameScreen::drawSavePopup()
 
         // TIDAK
         Rectangle noBtn = {px + PW - 200, py + 136, 140, 44};
-        bool noHov = CheckCollisionPointRec(GetMousePosition(), noBtn);
+        bool noHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, noBtn);
         DrawRectangleRec(noBtn, noHov ? Color{180, 60, 60, 255} : Color{120, 40, 40, 255});
         DrawRectangleLinesEx(noBtn, 1, {220, 80, 80, 255});
         int nw = MeasureText("TIDAK", 13);
@@ -1724,7 +1724,7 @@ void GameScreen::drawBuyDialog()
     // ── Tombol BELI & SKIP ────────────────────────────────────────────────
     float btnY = py + ph - 56;
     float btnW = pw / 2.f - 24;
-    Vector2 mouse = GetMousePosition();
+    Vector2 mouse = {GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())};
 
     // Tombol BELI
     Rectangle buyBtn = {px + 16, btnY, btnW, 40};
@@ -1923,7 +1923,7 @@ void GameScreen::drawLogPopup()
     float ibW = 100, ibH = 28;
     Rectangle inputBox = {ibX, ibY, ibW, ibH};
 
-    bool hover = CheckCollisionPointRec(GetMousePosition(), inputBox);
+    bool hover = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, inputBox);
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         logNFocused = hover;
 
@@ -1974,7 +1974,7 @@ void GameScreen::drawLogPopup()
 
     // Close button
     Rectangle closeBtn = {px + pw - 36, py + 8, 28, 28};
-    bool closeHover = CheckCollisionPointRec(GetMousePosition(), closeBtn);
+    bool closeHover = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, closeBtn);
     DrawRectangleRec(closeBtn, closeHover ? Color{180, 60, 60, 255} : Color{120, 40, 40, 255});
     DrawRectangleLinesEx(closeBtn, 1, {200, 80, 80, 255});
     DrawText("X", (int)(closeBtn.x + 9), (int)(closeBtn.y + 8), 12, WHITE);
@@ -2003,7 +2003,7 @@ void GameScreen::drawLogPopup()
     float totalH = display.size() * rowH;
 
     Rectangle listArea = {px, listY1, pw, listH};
-    if (CheckCollisionPointRec(GetMousePosition(), listArea))
+    if (CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, listArea))
     {
         float wheel = GetMouseWheelMove();
         logScrollY -= wheel * 40.f;

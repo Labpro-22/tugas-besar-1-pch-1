@@ -1,6 +1,6 @@
 CXX      := g++
 CXXFLAGS := -Wall -std=c++17 -I src -I lib/raylib/include
-LDFLAGS  := -L lib/raylib/lib -lraylib
+LDFLAGS := -L lib/raylib/lib -lraylib -lglfw3 -lopengl32 -lgdi32 -lwinmm
 
 SRC_DIR := src
 OBJ_DIR := build
