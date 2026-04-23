@@ -41,6 +41,7 @@ static int sellAllBuildingsInColorGroup(Player* player,
         StreetProperty* sp = dynamic_cast<StreetProperty*>(prop);
         if (!sp) continue;
         if (sp->getBuildingCount() > 0 || sp->gethasHotel()) {
+            // sellAllBuildings() sudah return setengah harga beli (sesuai spesifikasi)
             int proceeds = sp->sellAllBuildings();
             *player += proceeds;
             total += proceeds;

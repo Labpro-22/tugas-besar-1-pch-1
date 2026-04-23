@@ -8,7 +8,8 @@
 AuctionManager::AuctionManager()
     : auctionedProperty(nullptr), highestBidder(nullptr),
       currentBid(0), currentParticipantIdx(0),
-      consecutivePassCount(0), isAuctionOngoing(false) {}
+      consecutivePassCount(0), isAuctionOngoing(false),
+      allPassedWithoutBid(false), forcedBidder(nullptr) {}
 
 void AuctionManager::setupAuction(Property* prop, Player* initiator,
                                    const std::vector<Player*>& allPlayers) {
@@ -19,6 +20,8 @@ void AuctionManager::setupAuction(Property* prop, Player* initiator,
     highestBidder        = nullptr;
     currentBid           = 0;
     consecutivePassCount = 0;
+    allPassedWithoutBid  = false;
+    forcedBidder         = nullptr;
 
     // Susun urutan peserta mulai dari pemain SETELAH initiator
     activeParticipants.clear();
@@ -48,6 +51,8 @@ bool AuctionManager::placeBid(Player* bidder, int amount) {
     currentBid           = amount;
     highestBidder        = bidder;
     consecutivePassCount = 0; // reset karena ada BID
+    allPassedWithoutBid  = false;
+    forcedBidder         = nullptr;
 
     // Maju ke peserta berikutnya
     currentParticipantIdx = (currentParticipantIdx + 1) % (int)activeParticipants.size();
@@ -57,8 +62,22 @@ bool AuctionManager::placeBid(Player* bidder, int amount) {
 void AuctionManager::passBid() {
     if (!isAuctionOngoing) return;
 
+    // Jika sedang dalam mode forced bid, pemain tidak boleh PASS — abaikan
+    if (allPassedWithoutBid) return;
+
     consecutivePassCount++;
     currentParticipantIdx = (currentParticipantIdx + 1) % (int)activeParticipants.size();
+
+    // Jika semua pemain PASS tanpa ada yang BID sama sekali,
+    // pemain terakhir yang pass (sekarang currentParticipant) wajib bid
+    if (highestBidder == nullptr &&
+        consecutivePassCount >= (int)activeParticipants.size()) {
+        allPassedWithoutBid = true;
+        forcedBidder = getCurrentParticipant();
+        std::cout << "[DEBUG] Semua pemain pass tanpa bid. "
+                  << (forcedBidder ? forcedBidder->getUsername() : "?")
+                  << " wajib melakukan bid." << std::endl;
+    }
 }
 
 void AuctionManager::closeAuction(Bank& /*centralBank*/) {
@@ -84,6 +103,8 @@ void AuctionManager::closeAuction(Bank& /*centralBank*/) {
     highestBidder        = nullptr;
     currentBid           = 0;
     consecutivePassCount = 0;
+    allPassedWithoutBid  = false;
+    forcedBidder         = nullptr;
     activeParticipants.clear();
 }
 
@@ -114,4 +135,8 @@ Property* AuctionManager::getAuctionedProperty() const {
 Player* AuctionManager::getCurrentParticipant() const {
     if (activeParticipants.empty()) return nullptr;
     return activeParticipants[currentParticipantIdx];
+}
+
+bool AuctionManager::isForcedBid() const {
+    return allPassedWithoutBid;
 }
