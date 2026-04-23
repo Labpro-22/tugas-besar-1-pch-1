@@ -1,0 +1,17 @@
+1 15
+2
+player1 1000 GRT ACTIVE HUMAN
+0
+player2 1000 GRT ACTIVE HUMAN
+0
+player1 player2 
+player1
+4
+GRT street BANK BANK 1 0 0
+GBR railroad BANK BANK 1 0 0
+PLN utiliy BANK BANK 1 0 0
+JKT street BANK BANK 1 0 0
+0
+0
+1
+1 player1 TURN_START Giliran Turn 1

@@ -50,7 +50,7 @@ int Dice::getConsecutiveDoubles() const
     return playerConcecutiveDoubles;
 }
 
-void Dice::resetConsecutiveDouvles()
+void Dice::resetConsecutiveDoubles()
 {
     playerConcecutiveDoubles = 0;
 }

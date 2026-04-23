@@ -1,47 +1,59 @@
 #include "BeliCommand.hpp"
-#include "../GameMaster/GameMaster.hpp"
 #include "../Player/Player.hpp"
 #include "../Property/Property.hpp"
-#include "../Bank/Bank.hpp"
+#include "../GameMaster/GameMaster.hpp"
+#include "../GameState/GameState.hpp"
 #include <iostream>
 
-BeliCommand::BeliCommand(Player* buyer, Property* property, Bank* bank, bool buy)
-    : buyer(buyer), property(property), bank(bank), playerChoseToBuy(buy) {}
+// ─────────────────────────────────────────────
+//  Konstruktor
+// ─────────────────────────────────────────────
+
+BeliCommand::BeliCommand(Player* p, Property* prop, bool playerChoseToBuy)
+    : currentPlayer(p), property(prop), playerChoseToBuy(playerChoseToBuy) {}
+
+// ─────────────────────────────────────────────
+//  execute()
+// ─────────────────────────────────────────────
 
 void BeliCommand::execute(GameMaster& gm) {
-    if (!buyer || !property || !bank) return;
+    if (!currentPlayer || !property) {
+        std::cerr << "[BeliCommand] Error: player atau property null." << std::endl;
+        return;
+    }
 
-    // Pastikan properti masih milik Bank saat command dieksekusi
-    if (property->getStatus() != PropertyStatus::BANK) return;
+    GameState& gs = gm.getState();
 
-    if (playerChoseToBuy) {
-        // ── Beli ─────────────────────────────────────────────────────────
-        int price = property->getPurchasePrice();
+    // Hanya berlaku untuk properti berstatus BANK
+    if (property->getStatus() != PropertyStatus::BANK) {
+        std::cerr << "[BeliCommand] Property " << property->getCode()
+                  << " bukan milik Bank, skip." << std::endl;
+        return;
+    }
 
-        if (!buyer->canAfford(price)) {
-            // Tidak mampu bayar → langsung lelang
-            gm.log(buyer->getUsername(), "BELI",
-                   "Tidak mampu beli " + property->getName() +
-                   " (M" + std::to_string(price) + ") → lelang");
-            gm.startAuction(property, buyer);
-            return;
-        }
+        // ── Railroad & Utility: akuisisi gratis, langsung tanpa prompt ────────────
 
-        buyer->setBalance(buyer->getBalance() - price);
-        property->setOwner(buyer->getUsername());
+    // ── Street: bergantung pada pilihan pemain (ditentukan GUI) ───────────────
+    int price = property->getPurchasePrice();
+
+    if (playerChoseToBuy && currentPlayer->canAfford(price)) {
+        *currentPlayer -= price;
+        property->setOwner(currentPlayer->getUsername());
         property->setStatus(PropertyStatus::OWNED);
-        buyer->addProperty(property);
+        currentPlayer->addProperty(property);
 
-        gm.log(buyer->getUsername(), "BELI",
-               "Beli " + property->getName() +
-               ": -M" + std::to_string(price));
+        std::cout << "[DEBUG] " << currentPlayer->getUsername()
+                  << " membeli " << property->getName()
+                  << " seharga M" << price
+                  << ". Saldo: M" << currentPlayer->getBalance() << std::endl;
 
-        gm.getState().setPhase(GamePhase::PLAYER_TURN);
-
+        gs.setPhase(GamePhase::PLAYER_TURN);
     } else {
-        // ── Skip → lelang otomatis ────────────────────────────────────────
-        gm.log(buyer->getUsername(), "BELI",
-               "Skip " + property->getName() + " → lelang");
-        gm.startAuction(property, buyer);
+        // Tidak mau beli atau uang tidak cukup → lelang
+        std::cout << "[DEBUG] " << property->getName()
+                  << " masuk ke lelang." << std::endl;
+
+        gs.setPhase(GamePhase::AUCTION);
+        // GameMaster mendeteksi fase AUCTION dan menjalankan LelangCommand
     }
 }

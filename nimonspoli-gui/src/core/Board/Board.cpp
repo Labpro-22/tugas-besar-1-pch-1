@@ -38,6 +38,13 @@ string tileTypeToString(TileType type)
 Board::Board(const vector<Tile *> &Tile, int Size)
     : tile(Tile), size(Size) {}
 
+Board::~Board()
+{
+    for (Tile* t : tile)
+    {
+        delete t;
+    }
+}
 // FIX #2: const di akhir, bukan sebelum parameter
 Tile *Board::getTile(int idx) const
 {
@@ -377,11 +384,37 @@ void FreeParkingTile::onLanded(Player & /*p*/, GameState & /*gs*/)
 TaxTile::TaxTile(int id, string display, TileType type, string name, string code)
     : ActionTile(id, display, type, name, code) {}
 
-// FIX #17: BayarPajakCommand tidak di-instantiate di sini
-// onLanded hanya set fase; Command dispatcher yang panggil BayarPajakCommand
-void TaxTile::onLanded(Player & /*p*/, GameState &gs)
+// FIX #17: Pisahkan antara PPH (perlu input user) dan PBM (langsung)
+void TaxTile::onLanded(Player &p, GameState &gs)
 {
-    gs.setPhase(GamePhase::PLAYER_TURN);
+    TransactionLogger *logger = gs.getLogger();
+    int turn = gs.getCurrTurn();
+    TaxConfig taxCfg = gs.getTaxConfig();
+    Bank *bank = gs.getBank();
+    GameMaster *gm = gs.getGameMaster();
+
+    if (code == "PPH")
+    {
+        // PPH: simpan data ke GameState lalu set phase AWAITING_TAX
+        // GUI (TaxDialog) yang akan memanggil handlePPHChoice()
+        gs.setPendingPphFlat(static_cast<int>(taxCfg.pphFlat));
+        gs.setPendingPphPct(static_cast<int>(taxCfg.pphPercentage));
+        gs.setPhase(GamePhase::AWAITING_TAX);
+    }
+    else
+    {
+        // PBM: tidak perlu input user, langsung execute
+        BayarPajakCommand cmd(&p, this, bank, logger, taxCfg, turn);
+        try
+        {
+            cmd.execute(*gm);
+        }
+        catch (const InsufficientFundsException &)
+        {
+            gs.setPhase(GamePhase::BANKRUPTCY);
+            throw;
+        }
+    }
 }
 
 // ═════════════════════════════════════════════
@@ -393,23 +426,35 @@ CardTile::CardTile(int id, string display, TileType type, string name, string co
                    CardDeck<Card> *cardDeck)
     : ActionTile(id, display, type, name, code), card(cardDeck) {}
 
-// FIX #18: `deck` → `card` (nama atribut di header)
-// FIX #20: gs.getGameMaster() tidak ada di GameState API
-// TODO: Card::execute(p, gm) perlu GameMaster — tambahkan setelah GameState menyimpan ref ke GameMaster
+// CardTile::onLanded: execute CardCommand lalu simpan hasil ke GameState,
+// kemudian set phase SHOW_CARD agar GUI menampilkan CardDialog.
 void CardTile::onLanded(Player &p, GameState &gs)
 {
     if (!card)
         return;
 
-    Card *kartu = card->draw();
-    if (!kartu)
-        return;
+    std::string label = (code == "KSP") ? "Kesempatan" : "Dana Umum";
 
-    kartu->execute(p, gs);
+    TransactionLogger *logger = gs.getLogger();
+    int turn = gs.getCurrTurn();
+    GameMaster* gm = gs.getGameMaster();
 
-    card->discard(kartu);
+    CardCommand cmd(&p, card, &gs, logger, turn, label);
+    try
+    {
+        cmd.execute(*gm);
+    }
+    catch (const InsufficientFundsException &)
+    {
+        gs.setPhase(GamePhase::BANKRUPTCY);
+        throw;
+    }
+
+    // Simpan deskripsi kartu ke GameState agar bisa dibaca oleh CardDialog
+    gs.setPendingCardDesc(cmd.getLastDescription());
+    gs.setPendingCardDeck(label);
+    gs.setPhase(GamePhase::SHOW_CARD);
 }
-
 // ═════════════════════════════════════════════
 //  FestivalTile
 // ═════════════════════════════════════════════
@@ -417,9 +462,23 @@ void CardTile::onLanded(Player &p, GameState &gs)
 FestivalTile::FestivalTile(int id, string display, TileType type, string name, string code)
     : ActionTile(id, display, type, name, code) {}
 
-// FIX #19: parameter anonymous diberi nama; FestivalCommand dihandle dispatcher
-void FestivalTile::onLanded(Player & /*p*/, GameState &gs)
+// FestivalTile::onLanded: set phase AWAITING_FESTIVAL.
+// GUI (FestivalDialog) yang akan menampilkan list properti dan memanggil
+// FestivalCommand::executeWithProperty(selected) setelah user memilih.
+void FestivalTile::onLanded(Player &p, GameState &gs)
 {
-    // TODO: FestivalCommand dipanggil dari dispatcher
-    gs.setPhase(GamePhase::PLAYER_TURN);
+    TransactionLogger *logger = gs.getLogger();
+    int turn = gs.getCurrTurn();
+    GameMaster* gm = gs.getGameMaster();
+
+    // Buat command sementara untuk cek apakah ada properti eligible
+    FestivalCommand checkCmd(&p, logger, turn);
+    checkCmd.execute(*gm);  // execute hanya log jika kosong, tidak block
+
+    // Hanya masuk AWAITING_FESTIVAL jika ada properti eligible
+    if (!checkCmd.getEligibleStreets().empty())
+    {
+        gs.setPhase(GamePhase::AWAITING_FESTIVAL);
+    }
+    // Jika kosong: execute() sudah log, tidak perlu phase khusus
 }

@@ -1,0 +1,19 @@
+2 15
+2
+andra 1000 GO ACTIVE HUMAN
+0
+ok 1000 GO ACTIVE HUMAN
+0
+andra ok 
+andra
+4
+GRT street BANK BANK 1 0 0
+GBR railroad BANK BANK 1 0 0
+PLN utiliy BANK BANK 1 0 0
+JKT street BANK BANK 1 0 0
+0
+0
+3
+1 andra TURN_START Giliran Turn 1
+1 ok TURN_START Giliran Turn 1
+2 andra TURN_START Giliran Turn 2

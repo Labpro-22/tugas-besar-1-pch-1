@@ -3,6 +3,7 @@
 #include "../IScreen.hpp"
 #include "../../core/utils/TransactionLogger.hpp"
 #include "../GUIManager.hpp"
+#include "../../core/Property/StreetProperty.hpp"
 
 #include <string>
 #include <vector>
@@ -55,20 +56,20 @@ public:
     GameScreen();
     ~GameScreen() override;
 
-    
     void onEnter() override;
     void onExit()  override;
     void update(float dt) override;
     void render(Window& window) override;
     void setPlayerCount(int n) { activePlayerCount = n; }
-    void setGUIManager(GUIManager* gm) { guiManager = gm; }  // inject GUIManager
+    void setGUIManager(GUIManager* gm) { guiManager = gm; }
     int  activePlayerCount = 4;
     bool gameOver = false;
     bool isGameOver() const { return gameOver; }
-    // Methods untuk sinkronisasi dengan GameMaster (mode real)
-    void    syncFromGameMaster(); 
-    bool    isRealMode() const;
-    void    syncDiceResult(); 
+
+    // Sinkronisasi dengan GameMaster (mode real)
+    void syncFromGameMaster();
+    bool isRealMode() const;
+    void syncDiceResult();
 
     // ── Player colors ────────────────────────────────────────────────────
     Color playerColors[4] = {
@@ -79,22 +80,6 @@ public:
     };
 
 private:
-
-    // ── Save Tools ────────────
-    struct SavePopup {
-        bool    visible     = false;
-        bool    confirmOverwrite = false;   // true = sedang tanya "timpa?"
-        bool    resultVisible = false;      // true = tampilkan pesan hasil
-        bool    resultOk    = false;
-        float   resultTimer = 0.f;
-        std::string fileNameInput = "save"; // buffer nama file tanpa ekstensi
-        std::string resultMsg;
-    } savePopup;
- 
-    void handleSimpan();
-    void drawSavePopup();
-    void doSave(const std::string& filepath);
-    
 
     // ── Layout ──────────────────────────────────────────────────────────
     static constexpr int   SCREEN_W    = 1920;
@@ -108,7 +93,6 @@ private:
     static constexpr float ORIG_STRIP_W = 200.f;
     static constexpr float ORIG_STRIP_H =  35.f;
 
-    // Scale: board height = 2*290 + 9*200 = 2380, fit to 1080
     static constexpr float SCALE      = 1080.f / 2380.f;
     static constexpr float TILE_W     = ORIG_TILE_W  * SCALE;
     static constexpr float TILE_H     = ORIG_TILE_H  * SCALE;
@@ -116,20 +100,6 @@ private:
     static constexpr float STRIP_W    = ORIG_STRIP_W * SCALE;
     static constexpr float STRIP_H    = ORIG_STRIP_H * SCALE;
 
-    // TransactionLogger: Popup-screen attributes
-    bool showLogPopup;
-    int logShowN;
-    float logScrollY;
-
-    void initMockLogs(); /* Untuk Load Data Logs palsu*/
-    void drawLogPopup();
-    std::string getActionIcon(const std::string& action);
-    Color getActionColor(const std::string& action);
-    // Hanlde keyboardInput
-    std::string logNInput;   // string yang diketik user
-    bool logNFocused; // apakah input box sedang aktif
-    
-    
     float boardX, boardY;
 
     // ── Tiles ────────────────────────────────────────────────────────────
@@ -156,57 +126,150 @@ private:
     // ── State ────────────────────────────────────────────────────────────
     MockGameState gameState;
 
-    // ── GUIManager (untuk pushCommand) ───────────────────────────────────
+    // ── GUIManager ───────────────────────────────────────────────────────
     GUIManager* guiManager = nullptr;
+
+    // ── Player Visual (animasi pion) ─────────────────────────────────────
+    struct PlayerVisual {
+        float currentTileIdx;
+        float targetTileIdx;
+    };
+    std::vector<PlayerVisual> playerVisuals;
 
     // ── State dadu ───────────────────────────────────────────────────────
     struct DiceState {
-        int val1 = 0, val2 = 0;    // hasil terakhir (0 = belum pernah lempar)
-        bool hasRolled  = false;    // sudah lempar giliran ini?
-        bool isDouble   = false;    // hasil double?
-        bool tripleDouble = false;  // 3× double → penjara
-        float animTimer = 0.f;     // timer animasi rolling (0 = idle)
-        bool  animating = false;
-        static constexpr float ANIM_DURATION = 0.6f; // detik
+        int val1 = 0, val2 = 0;
+        bool hasRolled   = false;
+        bool isDouble    = false;
+        bool tripleDouble = false;
+        float animTimer  = 0.f;
+        bool animating   = false;
+        static constexpr float ANIM_DURATION = 0.6f;
     } diceState;
 
-    void drawDiceArea();            // gambar dadu di center board
-    void handleLemparDadu();        // buat & push LemparDaduCommand
+    // ── Save Popup ────────────────────────────────────────────────────────
+    struct SavePopup {
+        bool    visible          = false;
+        bool    confirmOverwrite = false;
+        bool    resultVisible    = false;
+        bool    resultOk         = false;
+        float   resultTimer      = 0.f;
+        std::string fileNameInput = "save";
+        std::string resultMsg;
+    } savePopup;
 
-    // ── State dialog beli ────────────────────────────────────────────────
+    // ── Log Popup ─────────────────────────────────────────────────────────
+    bool showLogPopup;
+    int  logShowN;
+    float logScrollY;
+    std::string logNInput;
+    bool logNFocused;
+
+    // ── Buy Dialog ────────────────────────────────────────────────────────
     struct BuyDialogState {
         bool visible   = false;
-        int  tileIdx   = -1;   // indeks petak properti yang diinjak
-        bool canAfford = true; // apakah pemain mampu bayar?
+        int  tileIdx   = -1;
+        bool canAfford = true;
     } buyDialog;
 
-    void drawBuyDialog();    // render dialog beli/skip
-    void triggerBuyDialog(int tileIdx); // dipanggil setelah dadu mendarat di properti BANK
+    // ── Tax Dialog ────────────────────────────────────────────────────────
+    struct TaxDialogState {
+        bool visible       = false;
+        int  flatAmount    = 0;
+        int  pctAmount     = 0;
+        int  wealth        = 0;
+        bool canAffordFlat = true;
+        bool canAffordPct  = true;
+        int  taxAmtPct     = 0;
+    } taxDialog;
 
-    
+    // ── Festival Dialog ───────────────────────────────────────────────────
+    struct FestivalDialogState {
+        bool visible   = false;
+        float scrollY  = 0.f;
+        std::vector<StreetProperty*> streets;
+        int hoveredIdx = -1;
+    } festivalDialog;
 
-    // ── Private methods ──────────────────────────────────────────────────
+    // ── Card Dialog ───────────────────────────────────────────────────────
+    struct CardDialogState {
+        bool visible          = false;
+        std::string deckLabel;
+        std::string description;
+    } cardDialog;
+
+    // ── Jail Dialog ───────────────────────────────────────────────────────
+    struct JailDialogState {
+        bool visible       = false;
+        int  jailFine      = 50;
+        bool canAffordFine = true;
+        int  jailTurnsLeft = 0;
+    } jailDialog;
+
+    // ── Properti Popup ────────────────────────────────────────────────────
+    struct PropertiPopupState {
+        bool  visible  = false;
+        float scrollY  = 0.f;
+    } propertiPopup;
+
+    // ── GameScreen.cpp (constructor, lifecycle, helpers) ──────────────────
     Color   getGroupColor(const std::string& group);
     void    loadTextures();
     void    initMockState();
-     
     void    handleInput();
+
+    // ── GameScreenBoard.cpp ───────────────────────────────────────────────
     void    drawBoard();
     void    drawTile(int idx, float cx, float cy, float rotation);
     void    drawBuildingStrip(float cx, float cy, float rotation,
                               int buildings, Color ownerColor);
     void    drawPlayers(int tileIdx, float cx, float cy);
     void    drawCenterArea();
-    void    drawLeftPanel();
-    void    drawRightPanel();
     void    drawPopup();
 
     Vector2   getTileCenter(int idx);
     Rectangle getTileRect(int idx);
     int       tileAtPoint(Vector2 pt);
 
-    
+    // ── GameScreenPanels.cpp ──────────────────────────────────────────────
+    void    drawLeftPanel();
+    void    drawRightPanel();
 
-    
+    // ── GameScreenDice.cpp ────────────────────────────────────────────────
+    void    drawDiceArea();
+    void    handleLemparDadu();
 
+    // ── GameScreenDialogBuy.cpp ───────────────────────────────────────────
+    void    triggerBuyDialog(int tileIdx);
+    void    drawBuyDialog();
+
+    // ── GameScreenDialogTax.cpp ───────────────────────────────────────────
+    void    triggerTaxDialog();
+    void    drawTaxDialog();
+
+    // ── GameScreenDialogFestival.cpp ──────────────────────────────────────
+    void    triggerFestivalDialog();
+    void    drawFestivalDialog();
+
+    // ── GameScreenDialogCard.cpp ──────────────────────────────────────────
+    void    triggerCardDialog();
+    void    drawCardDialog();
+
+    // ── GameScreenDialogJail.cpp ──────────────────────────────────────────
+    void    triggerJailDialog();
+    void    drawJailDialog();
+
+    // ── GameScreenDialogProperti.cpp ──────────────────────────────────────
+    void    drawPropertiPopup();
+
+    // ── GameScreenSave.cpp ────────────────────────────────────────────────
+    void    handleSimpan();
+    void    drawSavePopup();
+    void    doSave(const std::string& filepath);
+
+    // ── GameScreenLog.cpp ─────────────────────────────────────────────────
+    void    initMockLogs();
+    void    drawLogPopup();
+    std::string getActionIcon(const std::string& action);
+    Color       getActionColor(const std::string& action);
 };

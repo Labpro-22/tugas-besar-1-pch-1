@@ -1,0 +1,19 @@
+1 15
+2
+lol 1000 PLN ACTIVE HUMAN
+0
+help 1000 GO ACTIVE HUMAN
+0
+lol help 
+help
+4
+GRT street BANK BANK 1 0 0
+GBR railroad BANK BANK 1 0 0
+PLN utiliy lol OWNED 1 0 0
+JKT street BANK BANK 1 0 0
+0
+0
+3
+1 lol TURN_START Giliran Turn 1
+1 lol MOVE Mendarat di PLN (PLN)
+1 help TURN_START Giliran Turn 1

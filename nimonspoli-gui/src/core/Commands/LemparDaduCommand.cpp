@@ -49,7 +49,7 @@ void LemparDaduCommand::execute(GameMaster &gm)
                        "3x double berturut-turut → masuk penjara");
 
         // Reset counter sebelum sendPlayerToJail (yang juga memanggil endCurrentTurn)
-        dice.resetConsecutiveDouvles();
+        dice.resetConsecutiveDoubles();
         gameMaster.sendPlayerToJail(currentPlayer);
 
         // sendPlayerToJail sudah memanggil endCurrentTurn() — tidak perlu move pemain
@@ -66,8 +66,6 @@ void LemparDaduCommand::execute(GameMaster &gm)
                   << " mendapat giliran tambahan." << std::endl;
         gameMaster.setExtraTurn(true);
 
-        // Reset hasRolled agar pemain bisa lempar lagi di giliran tambahan
-        gameMaster.getState().setHasRolled(false);
     }
     else
     {

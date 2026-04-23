@@ -1,80 +1,12 @@
 #include "GameScreen.hpp"
 #include "../../../lib/raylib/include/raylib.h"
 #include "raymath.h"
-#include "../../core/Commands/LemparDaduCommand.hpp"
 #include "../../core/Board/Board.hpp"
-#include "../../core/Commands/BeliCommand.hpp"
-
-#include "../../core/utils/SaveLoadManager.hpp"
-#include "../../core/Board/Board.hpp"
-#include "../../core/Property/Property.hpp"
-#include "../../core/Property/StreetProperty.hpp"
 #include "../../core/GameMaster/GameMaster.hpp"
-#include <cmath>
 #include <string>
 #include <algorithm>
-#include <filesystem>
 
-// ─── Tile order (clockwise, starting from GO = bottom-right corner) ──────────
-static const TileDef TILE_DEFS[40] = {
-    // BOTTOM ROW right→left (spec 1..11)
-    {"GO", "BOTTOM", true},   // 0
-    {"GRT", "BOTTOM", false}, // 1
-    {"DNU", "BOTTOM", false}, // 2
-    {"TSK", "BOTTOM", false}, // 3
-    {"PPH", "BOTTOM", false}, // 4
-    {"GBR", "BOTTOM", false}, // 5
-    {"BGR", "BOTTOM", false}, // 6
-    {"FES", "BOTTOM", false}, // 7
-    {"DPK", "BOTTOM", false}, // 8
-    {"BKS", "BOTTOM", false}, // 9
-    {"PEN", "BOTTOM", true},  // 10 bottom-left corner
-
-    // LEFT COLUMN bottom->top (spec 20..12)
-    {"MGL", "LEFT", false}, // 11  ← paling bawah setelah PEN
-    {"PLN", "LEFT", false}, // 12
-    {"SOL", "LEFT", false}, // 13  (DNU di aksi = index 13, tapi code DNU)
-    {"YOG", "LEFT", false}, // 14
-    {"STB", "LEFT", false}, // 15  (railroad)
-    {"MAL", "LEFT", false}, // 16
-    {"SMG", "LEFT", false}, // 17
-    {"DNU", "LEFT", false}, // 18  ← DNU dari aksi.txt
-    {"SBY", "LEFT", false}, // 19  ← paling atas sebelum BBP
-
-    // TOP ROW left→right (spec 21..31)
-    {"BBP", "TOP", true},  // 20 top-left corner
-    {"MKS", "TOP", false}, // 21
-    {"KSP", "TOP", false}, // 22
-    {"BLP", "TOP", false}, // 23
-    {"MND", "TOP", false}, // 24
-    {"TUG", "TOP", false}, // 25
-    {"PLB", "TOP", false}, // 26
-    {"PKB", "TOP", false}, // 27
-    {"PAM", "TOP", false}, // 28
-    {"MED", "TOP", false}, // 29
-    {"PPJ", "TOP", true},  // 30 top-right corner
-
-    // RIGHT COLUMN top→bottom (spec 32..40)
-    {"BDG", "RIGHT", false}, // 31
-    {"DEN", "RIGHT", false}, // 32
-    {"FES", "RIGHT", false}, // 33
-    {"MTR", "RIGHT", false}, // 34
-    {"GUB", "RIGHT", false}, // 35
-    {"KSP", "RIGHT", false}, // 36
-    {"JKT", "RIGHT", false}, // 37
-    {"PBM", "RIGHT", false}, // 38
-    {"IKN", "RIGHT", false}, // 39
-};
-
-// Helper
-static void DrawRoundedBorder(Rectangle rec, float roundness, int segments, float thick, Color color)
-{
-    for (float i = 0.f; i < thick; i += 0.5f)
-    {
-        Rectangle r = {rec.x - i, rec.y - i, rec.width + i * 2, rec.height + i * 2};
-        DrawRectangleRoundedLines(r, roundness, segments, thick, color);
-    }
-}
+#include "GameScreenTiles.hpp"
 
 // ─── Constructor ─────────────────────────────────────────────────────────────
 GameScreen::GameScreen()
@@ -104,12 +36,41 @@ GameScreen::~GameScreen() {}
 // ─── IScreen lifecycle ───────────────────────────────────────────────────────
 void GameScreen::onEnter()
 {
+    tiles.clear();
     for (int i = 0; i < 40; i++)
         tiles.push_back(TILE_DEFS[i]);
-    TraceLog(LOG_INFO, "Working dir: %s", GetWorkingDirectory());
     loadTextures();
-    initMockState();
-    initMockLogs(); // Load Logs
+
+    if (isRealMode())
+    {
+        TraceLog(LOG_INFO, "GameScreen: REAL MODE - players: %d",
+                 (int)guiManager->getGameMaster()->getState().getPlayers().size());
+        // Mode real: inisialisasi minimal, langsung sync dari GameMaster
+        gameState.players.clear();
+        gameState.properties.resize(40);
+        for (int i = 0; i < 40; i++)
+        {
+            gameState.properties[i].code = TILE_DEFS[i].code;
+            gameState.properties[i].owner = -1;
+            gameState.properties[i].buildings = 0;
+            gameState.properties[i].mortgaged = false;
+            gameState.properties[i].festivalMult = 1;
+            gameState.properties[i].festivalDur = 0;
+            gameState.properties[i].type = "ACTION";
+            gameState.properties[i].colorGroup = "";
+        }
+        playerVisuals.clear(); // penting! biar syncFromGameMaster inisialisasi ulang
+        syncFromGameMaster();
+    }
+    else
+    {
+        TraceLog(LOG_WARNING, "GameScreen: MOCK MODE - guiManager=%s GM=%s",
+                 guiManager ? "OK" : "NULL",
+                 (guiManager && guiManager->getGameMaster()) ? "OK" : "NULL");
+        // Mode mock: pakai data dummy untuk testing UI
+        initMockState();
+        initMockLogs();
+    }
 }
 
 void GameScreen::onExit()
@@ -129,269 +90,44 @@ bool GameScreen::isRealMode() const
     return guiManager != nullptr && guiManager->getGameMaster() != nullptr;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  syncFromGameMaster()
-//
-//  Dipanggil setiap frame di update() jika isRealMode() == true.
-//  Fungsi ini mengisi ulang MockGameState dari data real sehingga semua
-//  fungsi render (drawBoard, drawLeftPanel, dll.) tidak perlu diubah.
-//
-//  Apa yang disync:
-//    - currentTurn, maxTurn
-//    - players (username, balance, position, status, cardCount, isCurrentTurn)
-//    - properties (owner, mortgaged, status — dari Board + Property*)
-//
-// ─────────────────────────────────────────────────────────────────────────────
-void GameScreen::syncFromGameMaster()
-{
-    if (!isRealMode())
-        return;
-
-    GameMaster *gm = guiManager->getGameMaster();
-    const GameState &gs = gm->getState();
-    Board *board = gs.getBoard();
-
-    // ── Turn info ────────────────────────────────────────────────────────
-    gameState.currentTurn = gs.getCurrTurn();
-    gameState.maxTurn = gs.getMaxTurn();
-    gameState.activePlayerIdx = gs.getCurrPlayerIdx();
-
-    // ── Sync players ─────────────────────────────────────────────────────
-    const auto &realPlayers = gs.getPlayers();
-    gameState.players.resize(realPlayers.size());
-
-    for (int i = 0; i < (int)realPlayers.size(); ++i)
-    {
-        Player *p = realPlayers[i];
-        MockPlayer &mp = gameState.players[i];
-
-        mp.username = p->getUsername();
-        mp.money = p->getBalance();
-        mp.position = std::max(0, p->getPosition() - 1);
-        mp.cardCount = p->getHandSize();
-        mp.isCurrentTurn = (i == gs.getCurrPlayerIdx());
-
-        switch (p->getStatus())
-        {
-        case PlayerStatus::ACTIVE:
-            mp.status = "ACTIVE";
-            break;
-        case PlayerStatus::JAILED:
-            mp.status = "JAILED";
-            break;
-        case PlayerStatus::BANKRUPT:
-            mp.status = "BANKRUPT";
-            break;
-        }
-    }
-
-    // ── Sync properties dari Board ───────────────────────────────────────
-    //
-    // TILE_DEFS adalah array 40 elemen yang mendefinisikan urutan petak.
-    // Kita iterasi semua tile, ambil PropertyTile* jika ada, lalu sync
-    // MockProperty yang sesuai.
-    //
-    // Asumsi: gameState.properties sudah diinisialisasi dengan 40 slot
-    // oleh initMockState(). Kita hanya update field owner/mortgaged/status.
-
-    if (board)
-    {
-        for (int i = 0; i < board->getSize(); ++i)
-        {
-            Tile *tile = board->getTile(i);
-            if (!tile)
-                continue;
-
-            // Cast ke PropertyTile — nullptr jika bukan properti
-            PropertyTile *pt = dynamic_cast<PropertyTile *>(tile);
-
-            if (!pt)
-                continue;
-
-            Property *prop = pt->getProperty();
-            if (!prop)
-                continue;
-
-            // Pastikan indeks aman
-            if (i >= (int)gameState.properties.size())
-                continue;
-
-            MockProperty &mp = gameState.properties[i];
-
-            // Sync status kepemilikan
-            switch (prop->getStatus())
-            {
-            case PropertyStatus::BANK:
-                mp.owner = -1;
-                mp.mortgaged = false;
-                break;
-            case PropertyStatus::OWNED:
-            {
-                // Cari indeks pemain berdasarkan ownerId
-                mp.mortgaged = false;
-                mp.owner = -1;
-                const std::string &ownerId = prop->getOwnerId();
-                for (int pi = 0; pi < (int)realPlayers.size(); ++pi)
-                {
-                    if (realPlayers[pi]->getUsername() == ownerId)
-                    {
-                        mp.owner = pi;
-                        break;
-                    }
-                }
-                break;
-            }
-            case PropertyStatus::MORTGAGED:
-                mp.mortgaged = true;
-                // Owner tetap ada meski digadai — cari seperti OWNED
-                {
-                    const std::string &ownerId = prop->getOwnerId();
-                    mp.owner = -1;
-                    for (int pi = 0; pi < (int)realPlayers.size(); ++pi)
-                    {
-                        if (realPlayers[pi]->getUsername() == ownerId)
-                        {
-                            mp.owner = pi;
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-            if (dynamic_cast<StreetTile *>(pt))
-                mp.type = "STREET";
-            else if (dynamic_cast<RailRoadTile *>(pt))
-                mp.type = "RAILROAD";
-            else if (dynamic_cast<UtilityTile *>(pt))
-                mp.type = "UTILITY";
-
-            // Harga beli (untuk buy dialog)
-            mp.price = prop->getPurchasePrice();
-        }
-    }
-
-    // ── Sync ke UI (tombol, phase) ───────────────────────────────────────
-
-    // ── Sync logger ──────────────────────────────────────────────────────
-    // Logger real ada di GameState. Kita tidak copy isinya (mahal) — sebagai
-    // gantinya, drawLogPopup() harus membaca dari sumber yang benar.
-    // Lihat catatan di bawah tentang patch drawLogPopup().
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  syncDiceResult()
-//
-//  Dipanggil dari GUIManager::run() SETELAH flushCommands(), karena
-//  LemparDaduCommand baru mengubah nilai Dice di dalam execute().
-//
-//  Mengisi diceState dari Dice* real sehingga drawDiceArea() langsung
-//  menampilkan hasil yang benar tanpa perlu ubah render code.
-// ─────────────────────────────────────────────────────────────────────────────
-void GameScreen::syncDiceResult()
-{
-    if (!isRealMode())
-        return;
-
-    GameMaster *gm = guiManager->getGameMaster();
-    Dice *dice = gm->getState().getDice();
-    if (!dice)
-        return;
-
-    int v1 = dice->getDaduVal1();
-    int v2 = dice->getDaduVal2();
-
-    // Jika nilai dadu berubah dari yang terakhir dirender → update & animasikan
-    bool changed = (v1 != diceState.val1 || v2 != diceState.val2);
-
-    if (changed && v1 > 0 && v2 > 0)
-    {
-        diceState.val1 = v1;
-        diceState.val2 = v2;
-        diceState.isDouble = dice->isDouble();
-        diceState.tripleDouble = (dice->getConsecutiveDoubles() >= 3);
-        diceState.hasRolled = gm->getState().getHasRolled();
-        diceState.animating = true;
-        diceState.animTimer = 0.f;
-    }
-
-    // Sync hasRolled jika berubah tanpa nilai dadu berubah
-    // (misal setelah giliran berganti → hasRolled direset ke false)
-    diceState.hasRolled = gm->getState().getHasRolled();
-
-    // ── Cek apakah perlu munculkan buy dialog ────────────────────────────
-    // Buy dialog dipicu saat phase = AWAITING_BUY dan dialog belum tampil
-    const GameState &gs = gm->getState();
-    if (gs.getPhase() == GamePhase::AWAITING_BUY && !buyDialog.visible)
-    {
-        Player *curP = gs.getCurrPlayer();
-        if (curP)
-        {
-            int pos = curP->getPosition();
-            // Cek properti di posisi ini masih milik bank (status BANK)
-            Board *board = gs.getBoard();
-            if (board)
-            {
-                Tile *tile = board->getTile(pos);
-                PropertyTile *pt = dynamic_cast<PropertyTile *>(tile);
-                if (pt && pt->getProperty())
-                {
-                    Property *prop = pt->getProperty();
-                    bool canAfford = curP->canAfford(prop->getPurchasePrice());
-                    // Hanya trigger untuk StreetTile (Railroad & Utility otomatis)
-                    if (prop->getStatus() == PropertyStatus::BANK)
-                    {
-                        std::string tileType = gameState.properties[pos].type;
-                        if (tileType == "STREET")
-                        {
-                            triggerBuyDialog(pos);
-                            buyDialog.canAfford = canAfford;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Sembunyikan buy dialog jika phase sudah berubah keluar dari AWAITING_BUY
-    if (buyDialog.visible && gs.getPhase() != GamePhase::AWAITING_BUY)
-    {
-        buyDialog.visible = false;
-    }
-}
-
 // ─── Update ──────────────────────────────────────────────────────────────────
 void GameScreen::update(float dt)
 {
-    // ── Sync data dari GameMaster (jika mode real) ───────────────────────
-    //    syncDiceResult() dipanggil dari GUIManager::run() setelah flushCommands()
-    //    sehingga posisinya sudah tepat (setelah Command dieksekusi).
     syncFromGameMaster();
+
+    // Animasi pion
+    for (int i = 0; i < (int)playerVisuals.size(); i++)
+    {
+        auto &pv = playerVisuals[i];
+        if (pv.currentTileIdx != pv.targetTileIdx)
+        {
+            float step = 5.0f * dt;
+            float diff = pv.targetTileIdx - pv.currentTileIdx;
+            if (diff < 0)
+                diff += 40;
+            if (diff < step)
+            {
+                pv.currentTileIdx = pv.targetTileIdx;
+            }
+            else
+            {
+                pv.currentTileIdx += step;
+                if (pv.currentTileIdx >= 40.0f)
+                    pv.currentTileIdx -= 40.0f;
+            }
+        }
+    }
 
     if (savePopup.resultTimer > 0)
         savePopup.resultTimer -= dt;
-
-    // ── Animasi dadu ─────────────────────────────────────────────────────
     if (diceState.animating)
     {
         diceState.animTimer += dt;
         if (diceState.animTimer >= DiceState::ANIM_DURATION)
-        {
             diceState.animating = false;
-            diceState.animTimer = 0.f;
-        }
     }
 
-    // ── Log popup scroll ─────────────────────────────────────────────────
-    if (showLogPopup)
-    {
-        float wheel = GetMouseWheelMove();
-        if (wheel != 0.f)
-            logScrollY -= wheel * 24.f;
-        if (logScrollY < 0.f)
-            logScrollY = 0.f;
-    }
-
-    // ── Input keyboard & mouse ───────────────────────────────────────────
+    glowTimer += dt;
     handleInput();
 }
 
@@ -403,11 +139,16 @@ void GameScreen::render(Window &window)
     drawLeftPanel();
     drawRightPanel();
     drawBoard();
-    drawDiceArea(); // overlay dadu di tengah board
+    drawDiceArea();
     drawPopup();
     drawBuyDialog();
+    drawTaxDialog();
+    drawFestivalDialog();
+    drawCardDialog();
     drawLogPopup();
     drawSavePopup();
+    drawJailDialog();
+    drawPropertiPopup();
     DrawFPS(LEFT_PANEL + 4, 4);
 }
 
@@ -467,14 +208,12 @@ void GameScreen::initMockState()
     gameState.currentTurn = 15;
     gameState.maxTurn = 50;
     gameState.activePlayerIdx = 0;
-    // gameState.kspGlow         = false;
-    // gameState.dnuGlow         = true;
 
     gameState.players = {
-        {"Uname1", 1500, 0, "ACTIVE", 2, true},   // GO
-        {"Uname2", 800, 5, "ACTIVE", 1, false},   // GBR
-        {"Uname3", 2200, 11, "ACTIVE", 3, false}, // SBY
-        {"Uname4", 0, 10, "JAILED", 0, false},    // PEN
+        {"Uname1", 1500, 0, "ACTIVE", 2, true},
+        {"Uname2", 800, 5, "ACTIVE", 1, false},
+        {"Uname3", 2200, 11, "ACTIVE", 3, false},
+        {"Uname4", 0, 10, "JAILED", 0, false},
     };
 
     gameState.properties.resize(40);
@@ -526,18 +265,25 @@ void GameScreen::initMockState()
 // ─── Input ────────────────────────────────────────────────────────────────────
 void GameScreen::handleInput()
 {
-    // Testing — tekan W untuk simulasi game over
     if (IsKeyPressed(KEY_W))
         gameOver = true;
 
-    Vector2 mouse = {GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())};
+    if (IsKeyPressed(KEY_T) && isRealMode())
+    {
+        GameMaster *gm = guiManager->getGameMaster();
+        Player *cur = gm->getState().getCurrPlayer();
+        if (cur && selectedTile >= 0)
+            cur->setPosition(selectedTile + 1);
+    }
+
+    Vector2 mouse = GetMousePosition();
 
     float cx1 = boardX + CORNER_SZ;
     float cx2 = boardX + CORNER_SZ + 9 * TILE_W;
     float cy1 = boardY + CORNER_SZ;
     float cy2 = boardY + CORNER_SZ + 9 * TILE_W;
 
-    // Zoom (scroll wheel, only inside center area)
+    // Zoom (scroll wheel, center area only)
     if (mouse.x > cx1 && mouse.x < cx2 && mouse.y > cy1 && mouse.y < cy2)
     {
         float wheel = GetMouseWheelMove();
@@ -578,6 +324,7 @@ void GameScreen::handleInput()
             selectedTile = -1;
         }
     }
+<<<<<<< HEAD
 }
 
 // ─── Tile geometry ────────────────────────────────────────────────────────────
@@ -1016,7 +763,7 @@ void GameScreen::drawRightPanel()
         {"END TURN", {80, 100, 160, 255}},
     };
 
-    Vector2 mouse = {GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())};
+    Vector2 mouse = {GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())};
     for (int i = 0; i < 8; i++)
     {
         Rectangle btn = {rx + 10, 140.f + i * 44, RIGHT_PANEL - 20, 36};
@@ -1112,7 +859,7 @@ void GameScreen::drawRightPanel()
     Rectangle logBtn = {rx + 10, (float)SCREEN_H - 70, RIGHT_PANEL - 20, 32};
     DrawRectangleRec(logBtn, {40, 42, 54, 255});
     DrawRectangleLinesEx(logBtn, 1, {100, 100, 160, 255});
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, logBtn))
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, logBtn))
         showLogPopup = !showLogPopup;
     int lw = MeasureText("LOG TRANSAKSI", 11);
     DrawText("LOG TRANSAKSI", (int)(rx + RIGHT_PANEL / 2 - lw / 2), SCREEN_H - 58, 11, {150, 150, 200, 255});
@@ -1209,7 +956,7 @@ void GameScreen::drawPopup()
         int tw = MeasureText(pbts[i].lbl, 12);
         DrawText(pbts[i].lbl, (int)(b.x + btnW / 2 - tw / 2), (int)(btnY + 11), 12, WHITE);
         if (i == 0 && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
-            CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, b))
+            CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, b))
         {
             showPopup = false;
             selectedTile = -1;
@@ -1310,7 +1057,7 @@ void GameScreen::drawSavePopup()
 
     // Tombol X
     Rectangle xBtn = {px + PW - 36, py + 8, 28, 28};
-    bool xHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, xBtn);
+    bool xHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, xBtn);
     DrawRectangleRec(xBtn, xHov ? Color{180, 60, 60, 255} : Color{110, 40, 40, 255});
     DrawText("X", (int)(xBtn.x + 9), (int)(xBtn.y + 8), 12, WHITE);
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && xHov)
@@ -1360,7 +1107,7 @@ void GameScreen::drawSavePopup()
 
         // Tombol SIMPAN
         Rectangle okBtn = {px + PW - 110, py + 84, 86, 38};
-        bool okHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, okBtn);
+        bool okHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, okBtn);
         DrawRectangleRec(okBtn, okHov ? Color{50, 100, 180, 255} : Color{35, 70, 130, 255});
         DrawRectangleLinesEx(okBtn, 1, {80, 130, 220, 255});
         int sw = MeasureText("SIMPAN", 12);
@@ -1427,7 +1174,7 @@ void GameScreen::drawSavePopup()
 
         // YA
         Rectangle yaBtn = {px + 60, py + 136, 140, 44};
-        bool yaHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, yaBtn);
+        bool yaHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, yaBtn);
         DrawRectangleRec(yaBtn, yaHov ? Color{60, 180, 90, 255} : Color{40, 120, 60, 255});
         DrawRectangleLinesEx(yaBtn, 1, {80, 220, 120, 255});
         int yw = MeasureText("YA, TIMPA", 13);
@@ -1435,7 +1182,7 @@ void GameScreen::drawSavePopup()
 
         // TIDAK
         Rectangle noBtn = {px + PW - 200, py + 136, 140, 44};
-        bool noHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, noBtn);
+        bool noHov = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, noBtn);
         DrawRectangleRec(noBtn, noHov ? Color{180, 60, 60, 255} : Color{120, 40, 40, 255});
         DrawRectangleLinesEx(noBtn, 1, {220, 80, 80, 255});
         int nw = MeasureText("TIDAK", 13);
@@ -1724,7 +1471,7 @@ void GameScreen::drawBuyDialog()
     // ── Tombol BELI & SKIP ────────────────────────────────────────────────
     float btnY = py + ph - 56;
     float btnW = pw / 2.f - 24;
-    Vector2 mouse = {GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())};
+    Vector2 mouse = {GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())};
 
     // Tombol BELI
     Rectangle buyBtn = {px + 16, btnY, btnW, 40};
@@ -1923,7 +1670,7 @@ void GameScreen::drawLogPopup()
     float ibW = 100, ibH = 28;
     Rectangle inputBox = {ibX, ibY, ibW, ibH};
 
-    bool hover = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, inputBox);
+    bool hover = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, inputBox);
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         logNFocused = hover;
 
@@ -1974,7 +1721,7 @@ void GameScreen::drawLogPopup()
 
     // Close button
     Rectangle closeBtn = {px + pw - 36, py + 8, 28, 28};
-    bool closeHover = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, closeBtn);
+    bool closeHover = CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, closeBtn);
     DrawRectangleRec(closeBtn, closeHover ? Color{180, 60, 60, 255} : Color{120, 40, 40, 255});
     DrawRectangleLinesEx(closeBtn, 1, {200, 80, 80, 255});
     DrawText("X", (int)(closeBtn.x + 9), (int)(closeBtn.y + 8), 12, WHITE);
@@ -2003,7 +1750,7 @@ void GameScreen::drawLogPopup()
     float totalH = display.size() * rowH;
 
     Rectangle listArea = {px, listY1, pw, listH};
-    if (CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f/GetScreenWidth()), GetMousePosition().y * (1080.f/GetScreenHeight())}, listArea))
+    if (CheckCollisionPointRec(Vector2{GetMousePosition().x * (1920.f / GetScreenWidth()), GetMousePosition().y * (1080.f / GetScreenHeight())}, listArea))
     {
         float wheel = GetMouseWheelMove();
         logScrollY -= wheel * 40.f;
@@ -2067,4 +1814,6 @@ void GameScreen::drawLogPopup()
                  (int)(px + pw / 2 - tw / 2), (int)(listY1 + listH / 2 - 10),
                  14, {100, 100, 140, 255});
     }
+    == == == =
+>>>>>>> origin/gs2
 }

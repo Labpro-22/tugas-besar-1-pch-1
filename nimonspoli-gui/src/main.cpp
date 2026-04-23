@@ -8,6 +8,7 @@
 #include "core/GameState/GameState.hpp"
 #include "core/Board/Board.hpp"
 #include "core/Player/Player.hpp"
+#include "core/ComputerPlayer/ComputerPlayer.hpp" // ← TAMBAHAN
 #include "core/Bank/Bank.hpp"
 #include "core/Dice/Dice.hpp"
 #include "core/AuctionManager/AuctionManager.hpp"
@@ -19,16 +20,13 @@
 #include "core/Board/BoardFactory.hpp"
 #include "core/utils/SaveLoadManager.hpp"
 #include <fstream>
+#include <sstream> // ← TAMBAHAN untuk std::istringstream
 #include <memory>
 #include <vector>
 #include <string>
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  main()
-// ─────────────────────────────────────────────────────────────────────────────
 int main()
 {
-    // SESUDAH:
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     std::string title = "Nimonspoli";
 
@@ -48,6 +46,7 @@ int main()
 
     gui.setScreen(menuScreen);
 
+<<<<<<< HEAD
     // ── Objek game — di-reset setiap New Game ────────────────────────────
     GameMaster *gameMaster = nullptr;
     Bank *bank = nullptr;
@@ -84,8 +83,33 @@ int main()
         board = nullptr;
         for (auto *p : players)
             delete p;
+=======
+    GameMaster*        gameMaster    = nullptr;
+    Bank*              bank          = nullptr;
+    Dice*              dice          = nullptr;
+    AuctionManager*    auctionMgr    = nullptr;
+    CardDeck<Card>*    chanceDeck    = nullptr;
+    CardDeck<Card>*    communityDeck = nullptr;
+    CardDeck<Card>*    skillDeck     = nullptr;
+    TransactionLogger* logger        = nullptr;
+    Board*             board         = nullptr;
+    std::vector<Player*> players;
+    std::vector<std::unique_ptr<Property>> properties;
+
+    auto cleanupGame = [&]() {
+        delete gameMaster;    gameMaster    = nullptr;
+        delete bank;          bank          = nullptr;
+        delete dice;          dice          = nullptr;
+        delete auctionMgr;    auctionMgr    = nullptr;
+        delete chanceDeck;    chanceDeck    = nullptr;
+        delete communityDeck; communityDeck = nullptr;
+        delete skillDeck;     skillDeck     = nullptr;
+        delete logger;        logger        = nullptr;
+        delete board;         board         = nullptr;
+        for (auto* p : players) delete p;
+>>>>>>> origin/gs2
         players.clear();
-        properties.clear(); // unique_ptr auto-delete
+        properties.clear();
     };
 
     while (!WindowShouldClose())
@@ -93,12 +117,17 @@ int main()
         float dt = GetFrameTime();
 
         // ── Transisi: Menu → Game ─────────────────────────────────────────
+<<<<<<< HEAD
         if (menuScreen->isReadyToStart())
         {
+=======
+        if (menuScreen->isReadyToStart()) {
+>>>>>>> origin/gs2
             auto setup = menuScreen->getSetup();
             menuScreen->resetReady();
             cleanupGame();
 
+<<<<<<< HEAD
             // Load config
             ConfigLoader cfg("config");
             auto propData = cfg.loadProperties();
@@ -154,6 +183,96 @@ int main()
                 }
                 catch (const std::exception &e)
                 {
+=======
+        // Load config
+        ConfigLoader cfg("config");
+        auto propData      = cfg.loadProperties();
+        auto railroadRent  = cfg.loadRailroad();
+        auto utilityFactor = cfg.loadUtility();
+        auto specialCfg    = cfg.loadSpecial();
+        auto miscCfg       = cfg.loadMisc();
+        auto actData = cfg.loadActions();
+        auto taxData = cfg.loadTax();
+
+            properties = PropertyFactory::createProperties(propData, railroadRent, utilityFactor);
+
+            bank          = new Bank(32, 12);
+            dice          = new Dice();
+            auctionMgr    = new AuctionManager();
+            logger        = new TransactionLogger();
+            chanceDeck    = new CardDeck<Card>();
+            communityDeck = new CardDeck<Card>();
+            skillDeck     = new CardDeck<Card>();
+
+            board = BoardFactory::createBoard(propData, actData, specialCfg,
+                                              chanceDeck, communityDeck, properties);
+
+            if (setup.isLoadGame) {
+                // ── LOAD GAME ─────────────────────────────────────────────
+                // Peek file dulu untuk tahu tipe tiap player (HUMAN/COM)
+                // sebelum construct — karena tidak bisa downcast setelah buat
+
+                struct PlayerInfo {
+                    std::string   name;
+                    bool          isBot;
+                    COMDifficulty diff;
+                };
+                std::vector<PlayerInfo> infos;
+
+                {
+                    std::ifstream peek(setup.saveFile);
+                    std::string line;
+                    std::getline(peek, line); // baris 1: turn maxTurn
+                    std::getline(peek, line); // baris 2: jumlah pemain
+                    int savedCount = std::stoi(line);
+
+                    for (int i = 0; i < savedCount; i++) {
+                        std::getline(peek, line); // baris player
+
+                        std::vector<std::string> tok;
+                        std::istringstream ss(line);
+                        std::string w;
+                        while (ss >> w) tok.push_back(w);
+
+                        PlayerInfo info;
+                        info.name  = tok.size() > 0 ? tok[0] : "_tmp_";
+                        info.isBot = tok.size() > 4 && tok[4] == "COM";
+                        info.diff  = COMDifficulty::MEDIUM;
+                        if (tok.size() > 5) {
+                            if (tok[5] == "EASY") info.diff = COMDifficulty::EASY;
+                            if (tok[5] == "HARD") info.diff = COMDifficulty::HARD;
+                        }
+                        infos.push_back(info);
+
+                        std::getline(peek, line); // jumlah kartu
+                        int cardCount = line.empty() ? 0 : std::stoi(line);
+                        for (int c = 0; c < cardCount; c++)
+                            std::getline(peek, line); // skip baris kartu
+                    }
+                }
+
+                // Construct player dengan tipe yang benar
+                for (auto& info : infos) {
+                    Player* p;
+                    if (info.isBot)
+                        p = new ComputerPlayer(info.name, miscCfg.initialBalance, info.diff);
+                    else
+                        p = new Player(info.name, miscCfg.initialBalance);
+                    p->setPosition(0);
+                    players.push_back(p);
+                }
+
+                GameState gs(miscCfg.maxTurn, players, board, bank, dice,
+                             auctionMgr, chanceDeck, communityDeck, skillDeck, logger, taxData);
+                gameMaster = new GameMaster(gs);
+
+                try {
+                    SaveLoadManager slm;
+                    slm.load(setup.saveFile, gameMaster->getState());
+                    gameMaster->beginTurn();
+                    std::cout << "[MUAT] Berhasil dimuat dari: " << setup.saveFile << std::endl;
+                } catch (const std::exception& e) {
+>>>>>>> origin/gs2
                     std::cerr << "[MUAT] Gagal: " << e.what() << std::endl;
                 }
 
@@ -162,6 +281,7 @@ int main()
                 gameScreen->setGUIManager(&gui);
                 gameScreen->setPlayerCount(count);
                 gui.setScreen(gameScreen);
+<<<<<<< HEAD
                 // Tidak perlu beginTurn() — turn sudah di-restore dari file
             }
             else
@@ -200,6 +320,38 @@ int main()
 
                 gameMaster->beginTurn();
             }
+=======
+
+                        // Debug memory — print setiap 60 frame
+            } else {
+                // ── NEW GAME ──────────────────────────────────────────────
+                int count = std::max(2, std::min(4, setup.playerCount));
+                for (int i = 0; i < count; ++i) {
+                    std::string name = (i < (int)setup.names.size() && !setup.names[i].empty())
+                                     ? setup.names[i]
+                                     : ("Pemain" + std::to_string(i + 1));
+
+                    Player* p;
+                    if (setup.isBot[i])
+                        p = new ComputerPlayer(name, miscCfg.initialBalance, setup.botDifficulty);
+                    else
+                        p = new Player(name, miscCfg.initialBalance);
+                    p->setPosition(0);
+                    players.push_back(p);
+                }
+
+                GameState gs(miscCfg.maxTurn, players, board, bank, dice,
+                             auctionMgr, chanceDeck, communityDeck, skillDeck, logger, taxData);
+                gameMaster = new GameMaster(gs);
+
+                gui.setGameMaster(gameMaster);
+                gameScreen->setGUIManager(&gui);
+                gameScreen->setPlayerCount(count);
+                gui.setScreen(gameScreen);
+
+                gameMaster->beginTurn();
+            }
+>>>>>>> origin/gs2
         }
 
         // ── Transisi: Game → Win ──────────────────────────────────────────
@@ -230,7 +382,7 @@ int main()
         if (winScreen->goToExit())
             break;
 
-        // ── Game logic: flush command → sync dice ─────────────────────────
+        // ── Game logic ────────────────────────────────────────────────────
         gui.flushCommands();
 
         if (gui.getCurrentScreen())
@@ -241,6 +393,7 @@ int main()
         }
 
         // ── COM auto-play ─────────────────────────────────────────────────
+<<<<<<< HEAD
         if (gameMaster)
         {
             GameState &state = gameMaster->getState();
@@ -248,19 +401,54 @@ int main()
             ComputerPlayer *com = dynamic_cast<ComputerPlayer *>(curr);
             if (com && state.getPhase() == GamePhase::PLAYER_TURN && !state.getHasRolled())
             {
+=======
+        // Di main.cpp, tambah variable di luar loop:
+        bool comHasActed = false;
+
+        // Di dalam loop, ganti bagian COM auto-play:
+        if (gameMaster) {
+            GameState& state = gameMaster->getState();
+            Player* curr     = state.getCurrPlayer();
+            ComputerPlayer* com = dynamic_cast<ComputerPlayer*>(curr);
+
+            if (com && state.getPhase() == GamePhase::PLAYER_TURN
+                    && !state.getHasRolled()
+                    && !comHasActed) {          // ← guard tambahan
+                comHasActed = true;             // ← set dulu sebelum execute
+>>>>>>> origin/gs2
                 com->executeTurn(*gameMaster);
-                gameMaster->endTurn();
-                gameMaster->beginTurn();
+                if (state.getPhase() != GamePhase::GAME_OVER) {
+                    gameMaster->endTurn();
+                    gameMaster->beginTurn();
+
+                    gui.clearCommands();
+                }
+            }
+
+            // Reset guard kalau giliran berganti ke pemain baru
+            if (!com || state.getHasRolled() == false) {
+                comHasActed = false;
             }
         }
+<<<<<<< HEAD
 
         if (gui.getCurrentScreen())
         {
             auto *gs = dynamic_cast<GameScreen *>(gui.getCurrentScreen());
             if (gs)
                 gs->syncDiceResult();
+=======
+        if (gui.getCurrentScreen()) {
+            auto* gs = dynamic_cast<GameScreen*>(gui.getCurrentScreen());
+            if (gs) gs->syncDiceResult();
+>>>>>>> origin/gs2
         }
 
+        // Debug memory — print setiap 60 frame
+        static int frameCount = 0;
+        if (++frameCount % 60 == 0) {
+            TraceLog(LOG_INFO, "Frame %d - queue size: (check manually)", frameCount);
+        }
         // ── Update + Render ───────────────────────────────────────────────
         BeginTextureMode(canvas);
         if (gui.getCurrentScreen())
@@ -282,7 +470,6 @@ int main()
         EndDrawing();
     }
 
-    // ── Cleanup final ─────────────────────────────────────────────────────
     cleanupGame();
     UnloadRenderTexture(canvas);
     gui.setScreen(nullptr);

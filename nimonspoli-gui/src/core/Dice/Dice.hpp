@@ -24,7 +24,7 @@ public:
     int getConsecutiveDoubles() const;
 
     // Mereset counter double berturut-turut (misal saat pemain ganti giliran atau masuk penjara)
-    void resetConsecutiveDouvles(); // Penamaan method disesuaikan dengan typo di UML diagram
+    void resetConsecutiveDoubles(); // Penamaan method disesuaikan dengan typo di UML diagram
 
     // Mengembalikan true jika kedua dadu bernilai sama
     bool isDouble() const;

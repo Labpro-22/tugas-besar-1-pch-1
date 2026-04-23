@@ -1,0 +1,21 @@
+2 15
+2
+player 1000 PLN ACTIVE HUMAN
+0
+COM2 1000 PEN ACTIVE COM MEDIUM
+0
+player COM2 
+player
+4
+GRT street BANK BANK 1 0 0
+GBR railroad BANK BANK 1 0 0
+PLN utiliy player OWNED 1 0 0
+JKT street BANK BANK 1 0 0
+0
+0
+5
+1 player TURN_START Giliran Turn 1
+1 player MOVE Mendarat di PLN (PLN)
+1 COM2 TURN_START Giliran Turn 1
+1 COM2 MOVE Mendarat di PEN (Penjara)
+2 player TURN_START Giliran Turn 2
