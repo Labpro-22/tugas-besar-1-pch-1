@@ -130,22 +130,19 @@ void GameState::advanceTurn()
     hasUsedCard = false;
 }
 
-void GameState::nextPlayer()
-{
-    if (listPlayer.empty())
-        return;
-
-    int total = static_cast<int>(listPlayer.size());
+void GameState::nextPlayer() {
+    if (listPlayer.empty()) return;
+ 
+    int total    = static_cast<int>(listPlayer.size());
     int attempts = 0;
-    do
-    {
+    do {
         currPlayerIdx = (currPlayerIdx + 1) % total;
         attempts++;
-    } while (listPlayer[currPlayerIdx]->getStatus() == PlayerStatus::BANKRUPT && attempts < total);
-
-    hasExtraTurn = false;
-    hasRolled = false;
-    hasUsedCard = false;
+    } while (listPlayer[currPlayerIdx]->getStatus() == PlayerStatus::BANKRUPT
+             && attempts < total);
+ 
+    // TIDAK reset hasExtraTurn / hasRolled / hasUsedCard di sini.
+    // Reset flag giliran adalah tanggung jawab beginTurn() saja.
 }
 
 void GameState::removePlayer(Player *p)

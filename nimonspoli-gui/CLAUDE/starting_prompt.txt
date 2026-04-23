@@ -1,0 +1,3 @@
+Ini adalah lanjutan sesi coding Nimonspoli kelompok PCH. Baca keempat file .md ini sebagai konteks. Jika anda membutuhkan file .hpp atau .cpp dari suatu file, langsung beritahukan kepada saya. 
+
+Sekarang kita akan 

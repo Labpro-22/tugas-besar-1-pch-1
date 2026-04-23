@@ -75,8 +75,7 @@ void GameMaster::handleCommand(const std::string &rawInput)
     (void)rawInput; // placeholder — diisi oleh tim CLI/GUI
 }
 
-    void GameMaster::beginTurn()
-    {
+void GameMaster::beginTurn(){
         state.setPhase(GamePhase::PLAYER_TURN);
         state.setHasRolled(false);
         state.setHasUsedCard(false);
@@ -92,18 +91,17 @@ void GameMaster::handleCommand(const std::string &rawInput)
         }
     }
 
-void GameMaster::endTurn()
-{
+void GameMaster::endTurn() {
     tickFestivalDurations();
-
-    if (!state.getHasExtraTurn())
-    {
-        // Satu siklus penuh (semua pemain sudah jalan) → naikkan turn
+ 
+    if (!state.getHasExtraTurn()) {
         int prevIdx = state.getCurrPlayerIdx();
         state.nextPlayer();
-        if (state.getCurrPlayerIdx() <= prevIdx)
-        {
-            // Sudah berputar penuh
+        int newIdx  = state.getCurrPlayerIdx();
+ 
+        // Wrap-around terjadi jika newIdx < prevIdx (index "melompat mundur")
+        // Ini lebih robust daripada <= karena handle skip pemain BANKRUPT.
+        if (newIdx < prevIdx) {
             state.advanceTurn();
         }
     }
@@ -126,25 +124,20 @@ void GameMaster::movePlayer(Player *player, int steps)
     // Cari posisi saat ini via kode petak
     // (Player menyimpan Tile*, kita perlu indeksnya)
     // Loop board untuk temukan indeks player sekarang
-    int curIdx = player->getPosition();
-
+    int curIdx   = player->getPosition();
+    bool passedGo = (curIdx + steps) >= boardSize;
     int targetIdx = (curIdx + steps) % boardSize;
 
-    // Cek apakah melewati GO (indeks 0)
-    if (targetIdx < curIdx || steps >= boardSize)
-    {
-        // Melewati GO → bayar gaji
-        Tile *goTile = board->getTile(0);
-        GoTile *go = dynamic_cast<GoTile *>(goTile);
-        if (go)
-        {
+    if (passedGo) {
+        Tile* goTile = board->getTile(0);
+        GoTile* go   = dynamic_cast<GoTile*>(goTile);
+        if (go) {
             state.getBank()->payPlayer(player, go->getSalary());
             log(player->getUsername(), "GO_SALARY",
                 "Melewati GO, menerima M" + std::to_string(go->getSalary()));
         }
     }
 
-    // Pindahkan player & update currPetak
     player->setPosition(targetIdx);
 
     // Trigger petak yang diinjak
@@ -156,6 +149,11 @@ void GameMaster::movePlayer(Player *player, int steps)
                 " (" + landedTile->getTileName() + ")");
         landedTile->onLanded(*player, state);
     }
+    cout << "Player " << player->getUsername() << " sekarang berada di petak " << player->getPosition() << endl;
+    cout << "movePlayer: curIdx=" << curIdx 
+     << " steps=" << steps 
+     << " target=" << targetIdx 
+     << " player=" << player->getUsername() << endl;
 }
 
 void GameMaster::teleportPlayer(Player *player, int targetIndex, bool passThroughGo)

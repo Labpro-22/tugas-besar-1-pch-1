@@ -496,9 +496,9 @@ Vector2 GameScreen::getTileCenter(int idx) {
         }
     }
     else if (td.side == "LEFT") {
-        int slot = idx - 11; // SBY(11)=0, MGL(19)=8
-        x = boardX + TILE_H/2.f;
-        y = boardY + CORNER_SZ + slot*TILE_W + TILE_W/2.f;
+        int slot = 8 - (idx - 11); // SBY(11)→8 (bawah/dekat PEN), MGL(19)→0 (atas/dekat BBP)
+        x = boardX + TILE_H / 2.f;
+        y = boardY + CORNER_SZ + slot * TILE_W + TILE_W / 2.f;
     }
     else if (td.side == "TOP") {
         if (td.corner) {
@@ -624,20 +624,38 @@ void GameScreen::drawBuildingStrip(float cx, float cy, float rotation,
 // ─── Draw players on tile ─────────────────────────────────────────────────────
 void GameScreen::drawPlayers(int tileIdx, float cx, float cy) {
     std::vector<int> onTile;
-    for (int p=0; p<(int)gameState.players.size(); p++)
+    for (int p = 0; p < (int)gameState.players.size(); p++)
         if (gameState.players[p].position == tileIdx) onTile.push_back(p);
     if (onTile.empty()) return;
-
-    float r = 8.f, sp = r*2.2f;
-    float startX = cx - (onTile.size()*sp)/2.f + r;
-    for (int i=0; i<(int)onTile.size(); i++) {
-        int pi = onTile[i];
-        float px = startX + i*sp;
-        DrawCircle((int)px, (int)cy, r+3, WHITE);
-        DrawCircle((int)px, (int)cy, r, playerColors[pi]);
-        std::string num = std::to_string(pi+1);
+ 
+    // Offset: geser pion ke area tengah tile yang terlihat
+    // (menjauh dari tepi luar board, menjauhi color strip bangunan)
+    float offX = 0.f, offY = 0.f;
+    if (!TILE_DEFS[tileIdx].corner) {
+        const float INNER_OFFSET = TILE_H * 0.30f;
+        const std::string& side = TILE_DEFS[tileIdx].side;
+        if      (side == "BOTTOM") offY = -INNER_OFFSET;  // geser ke atas (dalam board)
+        else if (side == "TOP")    offY =  INNER_OFFSET;  // geser ke bawah (dalam board)
+        else if (side == "LEFT")   offX =  INNER_OFFSET;  // geser ke kanan (dalam board)
+        else if (side == "RIGHT")  offX = -INNER_OFFSET;  // geser ke kiri  (dalam board)
+    }
+ 
+    float r     = 8.f;
+    float sp    = r * 2.2f;
+    float baseX = (cx + offX) - (onTile.size() * sp) / 2.f + r;
+    float baseY =  cy + offY;
+ 
+    for (int i = 0; i < (int)onTile.size(); i++) {
+        int   pi = onTile[i];
+        float px = baseX + i * sp;
+        float py = baseY;
+ 
+        DrawCircle((int)px, (int)py, r + 8, WHITE);
+        DrawCircle((int)px, (int)py, r + 5, playerColors[pi]);
+ 
+        std::string num = std::to_string(pi + 1);
         int fw = MeasureText(num.c_str(), 9);
-        DrawText(num.c_str(), (int)(px-fw/2.f), (int)(cy-5), 9, WHITE);
+        DrawText(num.c_str(), (int)(px - fw / 2.f), (int)(py - 5), 9, WHITE);
     }
 }
 
