@@ -11,6 +11,7 @@
 #include "../Property/PropertyFactory.hpp"
 #include "../Property/UtilityProperty.hpp"
 
+#include "../ComputerPlayer/ComputerPlayer.hpp"
 #include "../Card/CardDeck.hpp"
 #include "../Card/CardFactory.hpp"
 #include "../Card/SkillCard.hpp"
@@ -99,69 +100,60 @@ void SaveLoadManager::save(const GameState &state, const string &filename)
     out.close();
 }
 
-// SavePlayers
+// ─── savePlayers ─────────────────────────────────────────────────────────────
 /*
-<USERNAME> <UANG> <POSISI_PETAK> <STATUS>
+<USERNAME> <UANG> <POSISI_PETAK> <STATUS> <HUMAN/COM> [DIFFICULTY]
 <JUMLAH_KARTU_TANGAN>
-<JENIS_KARTU_1> <NILAI_KARTU_1> <SISA_DURASI_1>
-<JENIS_KARTU_2> <NILAI_KARTU_2> <SISA_DURASI_2>
+<JENIS_KARTU_1> [NILAI] [DURASI]
 */
-void SaveLoadManager::savePlayers(ofstream &out, const GameState &state)
-{
-    for (auto &p : state.getPlayers())
-    {
+void SaveLoadManager::savePlayers(ofstream& out, const GameState& state) {
+    for (auto& p : state.getPlayers()) {
+        // Status string
         string statusStr;
-        switch (p->getStatus())
-        {
-        case PlayerStatus::ACTIVE:
-            statusStr = "ACTIVE";
-            break;
-        case PlayerStatus::JAILED:
-            statusStr = "JAILED";
-            break;
-        case PlayerStatus::BANKRUPT:
-            statusStr = "BANKRUPT";
-            break;
+        switch (p->getStatus()) {
+            case PlayerStatus::ACTIVE:   statusStr = "ACTIVE";   break;
+            case PlayerStatus::JAILED:   statusStr = "JAILED";   break;
+            case PlayerStatus::BANKRUPT: statusStr = "BANKRUPT"; break;
         }
 
-        string tileCode = "GO"; // <- default aja
-        if (state.getBoard())
-        {
-            Tile *t = state.getBoard()->getTile((p->getPosition()));
-            if (t)
-            {
-                tileCode = t->getCode();
-            }
+        // Kode petak posisi saat ini
+        string tileCode = "GO";
+        if (state.getBoard()) {
+            Tile* t = state.getBoard()->getTile(p->getPosition());
+            if (t) tileCode = t->getCode();
         }
 
-        // <USERNAME> <UANG> <POSISI_PETAK> <STATUS>
-        out << p->getUsername() << " " << p->getBalance() << " " << tileCode << " " << statusStr << "\n";
+        // <USERNAME> <UANG> <POSISI_PETAK> <STATUS> <HUMAN/COM> [DIFFICULTY]
+        out << p->getUsername() << " "
+            << p->getBalance()  << " "
+            << tileCode         << " "
+            << statusStr;
+
+        // Flag COM atau HUMAN
+        ComputerPlayer* cp = dynamic_cast<ComputerPlayer*>(p);
+        if (cp)
+            out << " COM " << difficultyToString(cp->getDifficulty());
+        else
+            out << " HUMAN";
+
+        out << "\n";
 
         // <JUMLAH_KARTU_TANGAN>
         auto &hand = p->getHand();
         out << hand.size() << "\n";
 
-        // <JENIS_KARTU_1> <NILAI_KARTU_1> <SISA_DURASI_1>
-        for (auto *card : hand)
-        {
-            string type = card->getType();
-
-            out << type;
-            if (auto *dc = dynamic_cast<MoveCard *>(card))
-            {
-                // Move Card: simpan gerak
-                out << " " << dc->getSteps();
-            }
-            else if (auto *dc = dynamic_cast<DiscountCard *>(card))
-            {
-                // Discount Card: persentase + durasi
+        // <JENIS_KARTU> [NILAI] [DURASI]
+        for (auto* card : hand) {
+            out << card->getType();
+            if (auto* mc = dynamic_cast<MoveCard*>(card))
+                out << " " << mc->getSteps();
+            else if (auto* dc = dynamic_cast<DiscountCard*>(card))
                 out << " " << dc->getDiscountPercent() << " " << dc->getDuration();
-            }
-
             out << "\n";
         }
     }
 }
+
 
 // SaveProperties
 /*

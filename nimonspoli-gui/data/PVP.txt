@@ -1,0 +1,21 @@
+2 15
+2
+andra 1000 BBP ACTIVE HUMAN
+0
+keren 1000 KSP ACTIVE HUMAN
+0
+andra keren 
+andra
+4
+GRT street BANK BANK 1 0 0
+GBR railroad BANK BANK 1 0 0
+PLN utiliy BANK BANK 1 0 0
+JKT street BANK BANK 1 0 0
+0
+0
+5
+1 andra TURN_START Giliran Turn 1
+1 andra MOVE Mendarat di BBP (Bebas_Parkir)
+1 keren TURN_START Giliran Turn 1
+1 keren MOVE Mendarat di KSP (Kesempatan)
+2 andra TURN_START Giliran Turn 2

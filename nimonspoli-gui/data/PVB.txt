@@ -1,0 +1,26 @@
+4 15
+2
+po 1000 GO ACTIVE HUMAN
+0
+COM2 1000 GO ACTIVE COM MEDIUM
+0
+po COM2 
+po
+4
+GRT street BANK BANK 1 0 0
+GBR railroad COM2 OWNED 1 0 0
+PLN utiliy BANK BANK 1 0 0
+JKT street BANK BANK 1 0 0
+0
+0
+10
+1 po TURN_START Giliran Turn 1
+1 po MOVE Mendarat di BBP (Bebas_Parkir)
+1 COM2 TURN_START Giliran Turn 1
+1 COM2 MOVE Mendarat di GBR (STASIUN_GAMBIR)
+1 COM2 MOVE Mendarat di KSP (Kesempatan)
+2 po TURN_START Giliran Turn 2
+2 COM2 TURN_START Giliran Turn 2
+3 po TURN_START Giliran Turn 3
+3 COM2 TURN_START Giliran Turn 3
+4 po TURN_START Giliran Turn 4
