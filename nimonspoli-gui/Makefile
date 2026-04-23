@@ -1,6 +1,6 @@
 CXX      := g++
 CXXFLAGS := -Wall -std=c++17 -I src -I lib/raylib/include
-LDFLAGS := -L lib/raylib/lib -lraylib -lglfw3 -lopengl32 -lgdi32 -lwinmm
+LDFLAGS  := -L lib/raylib/lib -lraylib
 
 SRC_DIR := src
 OBJ_DIR := build
@@ -8,7 +8,7 @@ BIN_DIR := bin
 TARGET  := $(BIN_DIR)/nimonspoli
 
 ifeq ($(OS),Windows_NT)
-    LDFLAGS += -lopengl32 -lgdi32 -lwinmm
+    LDFLAGS += -L lib/raylib/lib -lopengl32 -lgdi32 -lwinmm -lglfw3
 else
     LDFLAGS += -lGL -lm -lpthread -ldl -lrt -lX11
     TARGET  := $(BIN_DIR)/nimonspoli
