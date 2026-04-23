@@ -31,89 +31,6 @@ string tileTypeToString(TileType type)
     }
 }
 
-string tileNameToString(TileName name)
-{
-    switch (name)
-    {
-    case TileName::GO:
-        return "GO";
-    case TileName::GARUT:
-        return "GARUT";
-    case TileName::COMMON_FUND:
-        return "DANA_UMUM";
-    case TileName::TASIKMALAYA:
-        return "TASIKMALAYA";
-    case TileName::INCOME_TAX:
-        return "PAJAK_PENGHASILAN";
-    case TileName::ST_GAMBIR:
-        return "STASIUN_GAMBIR";
-    case TileName::BOGOR:
-        return "BOGOR";
-    case TileName::FESTIVAL:
-        return "FESTIVAL";
-    case TileName::DEPOK:
-        return "DEPOK";
-    case TileName::BEKASI:
-        return "BEKASI";
-    case TileName::JAIL:
-        return "PENJARA";
-    case TileName::MAGELANG:
-        return "MAGELANG";
-    case TileName::PLN:
-        return "PLN";
-    case TileName::SOLO:
-        return "SOLO";
-    case TileName::YOGYAKARTA:
-        return "YOGYAKARTA";
-    case TileName::ST_BANDUNG:
-        return "STASIUN_BANDUNG";
-    case TileName::MALANG:
-        return "MALANG";
-    case TileName::SEMARANG:
-        return "SEMARANG";
-    case TileName::SURABAYA:
-        return "SURABAYA";
-    case TileName::FREE_PARK:
-        return "BEBAS_PARKIR";
-    case TileName::MAKASSAR:
-        return "MAKASSAR";
-    case TileName::CHANCE:
-        return "KESEMPATAN";
-    case TileName::BALIKPAPAN:
-        return "BALIKPAPAN";
-    case TileName::MANADO:
-        return "MANADO";
-    case TileName::ST_TUGU:
-        return "STASIUN_TUGU";
-    case TileName::PALEMBANG:
-        return "PALEMBANG";
-    case TileName::PEKANBARU:
-        return "PEKANBARU";
-    case TileName::PAM:
-        return "PAM";
-    case TileName::MEDAN:
-        return "MEDAN";
-    case TileName::GO_TO_JAIL:
-        return "PERGI_KE_PENJARA";
-    case TileName::BANDUNG:
-        return "BANDUNG";
-    case TileName::DENPASAR:
-        return "DENPASAR";
-    case TileName::MATARAM:
-        return "MATARAM";
-    case TileName::ST_GUBENG:
-        return "STASIUN_GUBENG";
-    case TileName::JAKARTA:
-        return "JAKARTA";
-    case TileName::LUX_GOODS:
-        return "PAJAK_BARANG_MEWAH";
-    case TileName::IKN:
-        return "IBU_KOTA_NUSANTARA";
-    default:
-        return "UNKNOWN";
-    }
-}
-
 // ═════════════════════════════════════════════
 //  Board
 // ═════════════════════════════════════════════
@@ -160,21 +77,22 @@ Tile *Board::findTileByCode(const string &code) const
 //  Tile (base)
 // ═════════════════════════════════════════════
 
-Tile::Tile(int id, string display, TileType type, TileName name, string code)
+Tile::Tile(int id, string display, TileType type, string name, string code)
     : id(id), colorDisplay(display), type(type), name(name), code(code) {}
 
 int Tile::getIndex() const { return id; }
 string Tile::getCode() const { return code; }
-string Tile::getTileName() const { return tileNameToString(name); }
+string Tile::getTileName() const { return name; }
 string Tile::getTileType() const { return tileTypeToString(type); }
 string Tile::getDisp() const { return colorDisplay; }
+string Tile::getPic() const {return picDisplay;}
 
 // ═════════════════════════════════════════════
 //  ActionTile
 // ═════════════════════════════════════════════
 
 // FIX #4: tileName → TileName (kapital T)
-ActionTile::ActionTile(int id, string display, TileType type, TileName name, string code)
+ActionTile::ActionTile(int id, string display, TileType type, string name, string code)
     : Tile(id, display, type, name, code) {}
 
 // ═════════════════════════════════════════════
@@ -183,7 +101,7 @@ ActionTile::ActionTile(int id, string display, TileType type, TileName name, str
 
 // FIX #5 #6: Board.hpp tidak ada prop di constructor → prop diinit nullptr
 // FIX #7: virtual int calculateRent = 0 di luar class dihapus
-PropertyTile::PropertyTile(int id, string display, TileType type, TileName name, string code)
+PropertyTile::PropertyTile(int id, string display, TileType type, string name, string code)
     : Tile(id, display, type, name, code), prop(nullptr) {}
 
 Property *PropertyTile::getProperty() const { return prop; }
@@ -192,7 +110,7 @@ Property *PropertyTile::getProperty() const { return prop; }
 //  StreetTile
 // ═════════════════════════════════════════════
 
-StreetTile::StreetTile(int id, string display, TileType type, TileName name, string code)
+StreetTile::StreetTile(int id, string display, TileType type, string name, string code)
     : PropertyTile(id, display, type, name, code) {}
 
 void StreetTile::onLanded(Player &p, GameState &gs)
@@ -234,10 +152,10 @@ int StreetTile::calculateRent(int /*diceTotal*/) const
 // ═════════════════════════════════════════════
 
 // FIX #8: RailRoadTile → RailroadTile
-RailroadTile::RailroadTile(int id, string display, TileType type, TileName name, string code)
+RailRoadTile::RailRoadTile(int id, string display, TileType type, string name, string code)
     : PropertyTile(id, display, type, name, code) {}
 
-void RailroadTile::onLanded(Player &p, GameState &gs)
+void RailRoadTile::onLanded(Player &p, GameState &gs)
 {
     Property *property = getProperty();
     if (!property)
@@ -260,7 +178,7 @@ void RailroadTile::onLanded(Player &p, GameState &gs)
 }
 
 // FIX #8: tambah class qualifier RailroadTile:: dan const
-int RailroadTile::calculateRent(int /*diceTotal*/) const
+int RailRoadTile::calculateRent(int /*diceTotal*/) const
 {
     Property *property = getProperty();
     if (!property)
@@ -276,7 +194,7 @@ int RailroadTile::calculateRent(int /*diceTotal*/) const
 // ═════════════════════════════════════════════
 
 // FIX #9: tambah `:` sebelum PropertyTile
-UtilityTile::UtilityTile(int id, string display, TileType type, TileName name, string code)
+UtilityTile::UtilityTile(int id, string display, TileType type, string name, string code)
     : PropertyTile(id, display, type, name, code) {}
 
 void UtilityTile::onLanded(Player &p, GameState &gs)
@@ -317,7 +235,7 @@ int UtilityTile::calculateRent(int diceTotal) const
 //  GoTile
 // ═════════════════════════════════════════════
 
-GoTile::GoTile(int id, string display, TileType type, TileName name, string code, int salary)
+GoTile::GoTile(int id, string display, TileType type, string name, string code, int salary)
     : ActionTile(id, display, type, name, code), salary(salary) {}
 
 // FIX #11: `p + salary` tidak mengubah uang → harus via Bank::payPlayer
@@ -341,7 +259,7 @@ int GoTile::getSalary() const { return salary; }
 //  JailTile
 // ═════════════════════════════════════════════
 
-JailTile::JailTile(int id, string display, TileType type, TileName name, string code,
+JailTile::JailTile(int id, string display, TileType type, string name, string code,
                    vector<Player *> inmates, vector<Player *> visitor, int jailFine)
     : ActionTile(id, display, type, name, code),
       inmates(inmates), visitor(visitor), jailFine(jailFine) {}
@@ -415,7 +333,7 @@ bool JailTile::isInmate(Player &p) const
 //  GoToJail
 // ═════════════════════════════════════════════
 
-GoToJail::GoToJail(int id, string display, TileType type, TileName name, string code)
+GoToJail::GoToJail(int id, string display, TileType type, string name, string code)
     : ActionTile(id, display, type, name, code) {}
 
 void GoToJail::onLanded(Player &p, GameState &gs)
@@ -444,7 +362,7 @@ void GoToJail::onLanded(Player &p, GameState &gs)
 //  FreeParkingTile
 // ═════════════════════════════════════════════
 
-FreeParkingTile::FreeParkingTile(int id, string display, TileType type, TileName name, string code)
+FreeParkingTile::FreeParkingTile(int id, string display, TileType type, string name, string code)
     : ActionTile(id, display, type, name, code) {}
 
 void FreeParkingTile::onLanded(Player & /*p*/, GameState & /*gs*/)
@@ -456,7 +374,7 @@ void FreeParkingTile::onLanded(Player & /*p*/, GameState & /*gs*/)
 //  TaxTile
 // ═════════════════════════════════════════════
 
-TaxTile::TaxTile(int id, string display, TileType type, TileName name, string code)
+TaxTile::TaxTile(int id, string display, TileType type, string name, string code)
     : ActionTile(id, display, type, name, code) {}
 
 // FIX #17: BayarPajakCommand tidak di-instantiate di sini
@@ -471,7 +389,7 @@ void TaxTile::onLanded(Player & /*p*/, GameState &gs)
 // ═════════════════════════════════════════════
 
 // FIX #18: CardDeck* → CardDeck<Card>*
-CardTile::CardTile(int id, string display, TileType type, TileName name, string code,
+CardTile::CardTile(int id, string display, TileType type, string name, string code,
                    CardDeck<Card> *cardDeck)
     : ActionTile(id, display, type, name, code), card(cardDeck) {}
 
@@ -496,7 +414,7 @@ void CardTile::onLanded(Player &p, GameState &gs)
 //  FestivalTile
 // ═════════════════════════════════════════════
 
-FestivalTile::FestivalTile(int id, string display, TileType type, TileName name, string code)
+FestivalTile::FestivalTile(int id, string display, TileType type, string name, string code)
     : ActionTile(id, display, type, name, code) {}
 
 // FIX #19: parameter anonymous diberi nama; FestivalCommand dihandle dispatcher

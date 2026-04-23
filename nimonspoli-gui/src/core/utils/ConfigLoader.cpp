@@ -55,6 +55,27 @@ std::vector<PropertyData> ConfigLoader::loadProperties() {
     return data;
 }
 
+std::vector<ActionData> ConfigLoader::loadActions(){
+    auto file = openFile("aksi.txt");
+    std::string line;
+    std::vector<ActionData> data;
+
+    while(std::getline(file, line)){
+        auto tokens = parseLine(line);
+        if(tokens.empty()) continue;
+        ActionData act;
+        act.id = std::stoi(tokens[0]);
+        act.code = tokens[1];
+        act.name = tokens[2];
+        act.type = tokens[3];
+        act.color = tokens[4];
+
+        data.push_back(act);
+    }
+
+    return data;
+}
+
 std::map<int, int> ConfigLoader::loadRailroad() {
     auto file = openFile("railroad.txt"); // Membaca railroad.txt
     std::map<int, int> rentMap;

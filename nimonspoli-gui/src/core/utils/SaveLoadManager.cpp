@@ -38,6 +38,8 @@
 
 // Utils
 
+SaveLoadManager::SaveLoadManager(){}
+
 vector<string> SaveLoadManager::tokenize(const string& line){
     vector<string> tokens;
     istringstream ss(line);
@@ -434,12 +436,12 @@ void SaveLoadManager::loadProperties(std::ifstream& in, GameState& state) {
         }
     }
 }
- 
 // ─── loadDeck ────────────────────────────────────────────────────────────────
 // Baca urutan drawPile + discardPile, restore ke skill deck
 // Catatan: kartu sudah dibuat saat init game, kita hanya re-arrange urutannya
 // TODO: butuh CardFactory untuk recreate kartu dari type string
-void SaveLoadManager::loadDeck(std::ifstream& in, GameState& state) {
+void SaveLoadManager::loadDeck(std::ifstream &in, GameState &state)
+{
     std::string line;
  
     // Draw pile count
@@ -493,7 +495,7 @@ void SaveLoadManager::loadDeck(std::ifstream& in, GameState& state) {
     for (auto* c : newDiscardPile)
         skillDeck->discard(c);
 }
- 
+
 // loadLogs 
 void SaveLoadManager::loadLogs(std::ifstream& in, GameState& state) {
     std::string line;

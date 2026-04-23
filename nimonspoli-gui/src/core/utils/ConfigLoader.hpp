@@ -12,6 +12,11 @@ struct PropertyData {
     std::vector<double> rentLevels; // index 0=L0, 1=L1, ... 5=L5
 };
 
+struct ActionData{
+    int id;
+    std::string code, name, type, color;
+};
+
 struct TaxConfig {
     double pphFlat       = 150;
     double pphPercentage = 10;
@@ -37,7 +42,7 @@ public:
     TaxConfig                   loadTax();           // tax.txt
     SpecialConfig               loadSpecial();       // special.txt
     MiscConfig                  loadMisc();          // misc.txt
-
+    std::vector<ActionData>     loadActions();
 private:
     std::string basePath;
     std::ifstream openFile(const std::string& filename);
