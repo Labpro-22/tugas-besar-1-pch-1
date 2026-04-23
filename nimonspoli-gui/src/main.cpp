@@ -258,6 +258,7 @@ int main()
 
                 gui.clearCommands();
             }
+        }
 
         if (gui.getCurrentScreen())
         {

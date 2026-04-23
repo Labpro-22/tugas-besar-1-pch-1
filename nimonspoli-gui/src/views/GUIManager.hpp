@@ -35,8 +35,9 @@ public:
 
     void flushCommands();
     void clearCommands() {
-    while (!commandQueue.empty()) {
-        delete commandQueue.front();
-        commandQueue.pop();
+        while (!commandQueue.empty()) {
+            delete commandQueue.front();
+            commandQueue.pop();
+        }
     }
 };
