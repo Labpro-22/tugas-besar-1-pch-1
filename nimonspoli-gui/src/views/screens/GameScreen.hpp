@@ -2,6 +2,7 @@
 #include "../../../lib/raylib/include/raylib.h"
 #include "../IScreen.hpp"
 #include "../../core/utils/TransactionLogger.hpp"
+#include "../../core/AuctionManager/AuctionManager.hpp"
 #include "../GUIManager.hpp"
 
 #include <string>
@@ -183,7 +184,22 @@ private:
     void drawBuyDialog();    // render dialog beli/skip
     void triggerBuyDialog(int tileIdx); // dipanggil setelah dadu mendarat di properti BANK
 
-    
+    struct AuctionDialogState {
+        bool        visible       = false;
+        int         tileIdx       = -1;    // indeks petak properti (0-based)
+        int         currentBid    = 0;     // tawaran tertinggi saat ini
+        std::string highestBidder;         // username penawar tertinggi
+        std::string currentBidder;         // username yang sedang giliran bid
+        bool        inputActive   = false; // apakah input box bid aktif
+        std::string bidInput;              // string yang diketik user
+        std::string errorMsg;              // pesan error bid tidak valid
+        float       errorTimer    = 0.f;   // timer hilangnya pesan error
+    } auctionDialog;
+ 
+    void triggerAuctionDialog(int tileIdx);  // setup + tampilkan dialog lelang
+    void drawAuctionDialog();                // render dialog lelang tiap frame
+    void syncAuctionState();                 // sync data dari AuctionManager ke struct
+    void _finalizeAuction(); 
 
     // ── Private methods ──────────────────────────────────────────────────
     Color   getGroupColor(const std::string& group);

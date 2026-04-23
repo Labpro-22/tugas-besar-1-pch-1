@@ -128,12 +128,9 @@ catatan: komponen dengan lambang 🔄 memiliki kemungkinan untuk sudah diimpleme
 
 ## BUG AKTIF
 
-| #   | Komponen                                | Deskripsi                                                                                                                                                                                          | Status                                        |
-| --- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| 1   | `GameScreen::drawPlayers()`             | Posisi pion hanya benar di sisi BOTTOM. Sisi LEFT/RIGHT/TOP pion tidak di tengah tile karena tidak ada offset rotasi                                                                               | 🔄 Patch tersedia, belum dikonfirmasi applied |
-| 2   | `LemparDaduCommand::execute()`          | Player berstatus JAILED masih bisa lempar dadu — tidak ada guard cek `PlayerStatus::JAILED`                                                                                                        | 🔄 Patch tersedia, belum dikonfirmasi applied |
-| 3   | `GameMaster::movePlayer()`              | Kondisi deteksi melewati GO `targetIdx < curIdx` false-positive → player bisa tiba-tiba pindah posisi aneh. Fix: gunakan `(curIdx + steps) >= boardSize`                                           | 🔄 Patch tersedia, belum dikonfirmasi applied |
-| 4   | `JailTile::onLanded()` + `BoardFactory` | Player mendarat di PEN (kunjungan) langsung di-set JAILED, padahal harusnya ACTIVE. Hanya mendarat di PPJ yang boleh set JAILED. Perlu dicek apakah `BoardFactory` mapping PEN dan PPJ sudah benar | 🔄 Investigasi: kirim hasil debug             |
+| #   | Komponen      | Deskripsi                                                                                      | Status   |
+| --- | ------------- | ---------------------------------------------------------------------------------------------- | -------- |
+| 1   | `BeliCommand` | Dialog beli selalu muncul meskipun player berhenti di petak yang bersifat RAILROAD dan UTILITY | unsolved |
 
 ---
 

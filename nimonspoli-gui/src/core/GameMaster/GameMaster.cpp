@@ -304,45 +304,19 @@ void GameMaster::handlePropertyLanding(Player *player, Property *prop)
 
 void GameMaster::startAuction(Property *prop, Player *triggerPlayer)
 {
-    if (!prop)
-        return;
-
+    if (!prop) return;
+ 
     AuctionManager *am = state.getAuctionManager();
-    std::vector<Player *> all = state.getActivePlayers();
-
-    // Susun urutan lelang: mulai dari pemain setelah trigger
-    std::vector<Player *> participants;
-    if (triggerPlayer)
-    {
-        auto it = std::find(all.begin(), all.end(), triggerPlayer);
-        if (it != all.end())
-        {
-            ++it;
-            while (it != all.end())
-            {
-                participants.push_back(*it++);
-            }
-            it = all.begin();
-            while (*it != triggerPlayer)
-            {
-                participants.push_back(*it++);
-            }
-        }
-    }
-    else
-    {
-        participants = all;
-    }
-
-    am->setupAuction(prop, participants);
+    if (!am) return;
+ 
+    // setupAuction() sudah handle penyusunan urutan peserta secara internal:
+    // - exclude BANKRUPT
+    // - mulai dari pemain SETELAH triggerPlayer
+    am->setupAuction(prop, triggerPlayer, state.getActivePlayers());
+ 
     state.setPhase(GamePhase::AUCTION);
-
-    log("SYSTEM", "AUCTION_START",
-        "Lelang dimulai untuk " + prop->getName());
-
-    // Loop lelang — setiap giliran pemain: BID atau PASS
-    // (Detail interaksi I/O dilakukan oleh LelangCommand)
-    // GameMaster hanya menyediakan am->placeBid() dan am->closeAuction()
+ 
+    log("SYSTEM", "AUCTION_START", "Lelang dimulai untuk " + prop->getName());
 }
 
 // ─────────────────────────────────────────────

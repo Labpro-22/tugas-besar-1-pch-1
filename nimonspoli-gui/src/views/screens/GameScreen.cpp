@@ -4,12 +4,14 @@
 #include "../../core/Commands/LemparDaduCommand.hpp"
 #include "../../core/Board/Board.hpp"
 #include "../../core/Commands/BeliCommand.hpp"
+#include "../../core/Commands/LelangCommand.hpp"
 
 #include "../../core/utils/SaveLoadManager.hpp"
 #include "../../core/Board/Board.hpp"
 #include "../../core/Property/Property.hpp"
 #include "../../core/Property/StreetProperty.hpp"
 #include "../../core/GameMaster/GameMaster.hpp"
+#include "../../core/AuctionManager/AuctionManager.hpp"
 #include <cmath>
 #include <string>
 #include <algorithm>
@@ -72,7 +74,7 @@ static void DrawRoundedBorder(Rectangle rec, float roundness, int segments, floa
     for (float i = 0.f; i < thick; i += 0.5f)
     {
         Rectangle r = {rec.x - i, rec.y - i, rec.width + i * 2, rec.height + i * 2};
-        DrawRectangleRoundedLines(r, roundness, segments, thick, color);
+        DrawRectangleRoundedLines(r, roundness, segments, color);
     }
 }
 
@@ -186,14 +188,6 @@ void GameScreen::syncFromGameMaster()
     }
 
     // ── Sync properties dari Board ───────────────────────────────────────
-    //
-    // TILE_DEFS adalah array 40 elemen yang mendefinisikan urutan petak.
-    // Kita iterasi semua tile, ambil PropertyTile* jika ada, lalu sync
-    // MockProperty yang sesuai.
-    //
-    // Asumsi: gameState.properties sudah diinisialisasi dengan 40 slot
-    // oleh initMockState(). Kita hanya update field owner/mortgaged/status.
-
     if (board)
     {
         for (int i = 0; i < board->getSize(); ++i)
@@ -202,21 +196,29 @@ void GameScreen::syncFromGameMaster()
             if (!tile)
                 continue;
 
-            // Cast ke PropertyTile — nullptr jika bukan properti
-            PropertyTile *pt = dynamic_cast<PropertyTile *>(tile);
-
-            if (!pt)
-                continue;
-
-            Property *prop = pt->getProperty();
-            if (!prop)
-                continue;
-
             // Pastikan indeks aman
             if (i >= (int)gameState.properties.size())
                 continue;
 
             MockProperty &mp = gameState.properties[i];
+
+            // Cast ke PropertyTile — nullptr jika bukan properti
+            PropertyTile *pt = dynamic_cast<PropertyTile *>(tile);
+
+            if (!pt)
+            {
+                // FIX UTAMA: Reset state untuk petak non-properti (Penjara, GO, dll)
+                // Ini mencegah GUI tertipu dan salah memunculkan Buy Dialog
+                mp.type = "NONE";
+                mp.owner = -1;
+                mp.mortgaged = false;
+                mp.price = 0;
+                continue;
+            }
+
+            Property *prop = pt->getProperty();
+            if (!prop)
+                continue;
 
             // Sync status kepemilikan
             switch (prop->getStatus())
@@ -271,6 +273,31 @@ void GameScreen::syncFromGameMaster()
     }
 
     // ── Sync ke UI (tombol, phase) ───────────────────────────────────────
+    
+    // TAMBAHKAN IMPLEMENTASI BARU DI SINI
+    if (gs.getPhase() == GamePhase::AWAITING_BUY)
+    {
+        // Cegah pemanggilan berulang setiap frame jika dialog sudah terbuka
+        if (!buyDialog.visible) 
+        {
+            Player *curP = gs.getCurrPlayer();
+            if (curP)
+            {
+                // Ambil posisi pemain. Pastikan konversi dari indeks GameMaster (1-40) 
+                // ke indeks array Mock GUI (0-39) sudah benar.
+                int guiTileIdx = std::max(0, curP->getPosition() - 1);
+                triggerBuyDialog(guiTileIdx);
+            }
+        }
+    }
+    else
+    {
+        // Pastikan dialog tertutup secara otomatis saat fase berubah 
+        // (misalnya saat player sudah menekan Beli/Skip dan fase kembali ke PLAYER_TURN)
+        if (buyDialog.visible && buyDialog.tileIdx != -1) {
+             buyDialog.visible = false;
+        }
+    }
 
     // ── Sync logger ──────────────────────────────────────────────────────
     // Logger real ada di GameState. Kita tidak copy isinya (mahal) — sebagai
@@ -291,73 +318,113 @@ void GameScreen::syncDiceResult()
 {
     if (!isRealMode())
         return;
-
-    GameMaster *gm = guiManager->getGameMaster();
-    Dice *dice = gm->getState().getDice();
-    if (!dice)
-        return;
-
-    int v1 = dice->getDaduVal1();
-    int v2 = dice->getDaduVal2();
-
-    // Jika nilai dadu berubah dari yang terakhir dirender → update & animasikan
+ 
+    GameMaster* gm   = guiManager->getGameMaster();
+    Dice*       dice = gm->getState().getDice();
+    if (!dice) return;
+ 
+    int  v1      = dice->getDaduVal1();
+    int  v2      = dice->getDaduVal2();
     bool changed = (v1 != diceState.val1 || v2 != diceState.val2);
-
+ 
     if (changed && v1 > 0 && v2 > 0)
     {
-        diceState.val1 = v1;
-        diceState.val2 = v2;
-        diceState.isDouble = dice->isDouble();
+        diceState.val1         = v1;
+        diceState.val2         = v2;
+        diceState.isDouble     = dice->isDouble();
         diceState.tripleDouble = (dice->getConsecutiveDoubles() >= 3);
-        diceState.hasRolled = gm->getState().getHasRolled();
-        diceState.animating = true;
-        diceState.animTimer = 0.f;
+        diceState.hasRolled    = gm->getState().getHasRolled();
+        diceState.animating    = true;
+        diceState.animTimer    = 0.f;
     }
-
-    // Sync hasRolled jika berubah tanpa nilai dadu berubah
-    // (misal setelah giliran berganti → hasRolled direset ke false)
+ 
     diceState.hasRolled = gm->getState().getHasRolled();
+ 
+    const GameState& gs = gm->getState();
+    GamePhase phase     = gs.getPhase();
+    std::cout << "[DEBUG] phase=" << (int)phase
+          << " buyVisible=" << buyDialog.visible
+          << " auctionVisible=" << auctionDialog.visible << std::endl;
 
-    // ── Cek apakah perlu munculkan buy dialog ────────────────────────────
-    // Buy dialog dipicu saat phase = AWAITING_BUY dan dialog belum tampil
-    const GameState &gs = gm->getState();
-    if (gs.getPhase() == GamePhase::AWAITING_BUY && !buyDialog.visible)
+    if (gs.getPhase() == GamePhase::AUCTION) {
+        AuctionManager* am = gs.getAuctionManager();
+        std::cout << "[DEBUG] am=" << am
+                << " prop=" << (am ? am->getAuctionedProperty() : nullptr) << std::endl;
+    }
+ 
+    // ── AWAITING_BUY → tampilkan buy dialog (Street only) ────────────────
+    if (phase == GamePhase::AWAITING_BUY && !buyDialog.visible)
     {
-        Player *curP = gs.getCurrPlayer();
+        Player* curP = gs.getCurrPlayer();
         if (curP)
         {
-            int pos = curP->getPosition();
-            // Cek properti di posisi ini masih milik bank (status BANK)
-            Board *board = gs.getBoard();
-            if (board)
+            int    pos0  = curP->getPosition() - 1;   // konversi 1-based → 0-based
+            Board* board = gs.getBoard();
+ 
+            if (board && pos0 >= 0 && pos0 < board->getSize())
             {
-                Tile *tile = board->getTile(pos);
-                PropertyTile *pt = dynamic_cast<PropertyTile *>(tile);
+                Tile* tile = board->getTile(pos0);
+ 
+                // Guard: hanya StreetTile yang menampilkan buy dialog
+                StreetTile* st = dynamic_cast<StreetTile*>(tile);
+                if (!st)
+                {
+                    // Tile lain tidak boleh set AWAITING_BUY — reset agar tidak stuck
+                    gm->getState().setPhase(GamePhase::PLAYER_TURN);
+                    return;
+                }
+ 
+                PropertyTile* pt = dynamic_cast<PropertyTile*>(tile);
                 if (pt && pt->getProperty())
                 {
-                    Property *prop = pt->getProperty();
-                    bool canAfford = curP->canAfford(prop->getPurchasePrice());
-                    // Hanya trigger untuk StreetTile (Railroad & Utility otomatis)
+                    Property* prop = pt->getProperty();
                     if (prop->getStatus() == PropertyStatus::BANK)
                     {
-                        std::string tileType = gameState.properties[pos].type;
-                        if (tileType == "STREET")
-                        {
-                            triggerBuyDialog(pos);
-                            buyDialog.canAfford = canAfford;
-                        }
+                        triggerBuyDialog(pos0);
+                        buyDialog.canAfford = curP->canAfford(prop->getPurchasePrice());
+                    }
+                    else
+                    {
+                        gm->getState().setPhase(GamePhase::PLAYER_TURN);
                     }
                 }
             }
         }
     }
-
-    // Sembunyikan buy dialog jika phase sudah berubah keluar dari AWAITING_BUY
-    if (buyDialog.visible && gs.getPhase() != GamePhase::AWAITING_BUY)
-    {
+ 
+    // Sembunyikan buy dialog jika phase sudah bukan AWAITING_BUY
+    if (buyDialog.visible && phase != GamePhase::AWAITING_BUY)
         buyDialog.visible = false;
+ 
+    // ── AUCTION → tampilkan auction dialog ───────────────────────────────
+    if (phase == GamePhase::AUCTION && !auctionDialog.visible)
+    {
+        // tileIdx diambil dari posisi pemain yang memicu lelang.
+        // AuctionManager sudah di-setup oleh LelangCommand sebelum phase di-set.
+        // Kita cukup trigger dialog tanpa perlu tahu tile spesifik untuk render;
+        // nama properti diambil langsung dari AuctionManager.
+        AuctionManager* am = gs.getAuctionManager();
+        if (am && am->getAuctionedProperty())
+        {
+            // Cari tileIdx dari kode properti untuk keperluan render warna group
+            Board* board = gs.getBoard();
+            int tileIdx  = 0;   // fallback
+            if (board)
+            {
+                int found = board->findTileIndexByCode(
+                    am->getAuctionedProperty()->getCode());
+                if (found >= 0)
+                    tileIdx = found;  // Board sudah 0-based
+            }
+            triggerAuctionDialog(tileIdx);
+        }
     }
+ 
+    // Sembunyikan auction dialog jika phase sudah bukan AUCTION
+    if (auctionDialog.visible && phase != GamePhase::AUCTION)
+        auctionDialog.visible = false;
 }
+ 
 
 // ─── Update ──────────────────────────────────────────────────────────────────
 void GameScreen::update(float dt)
@@ -406,6 +473,7 @@ void GameScreen::render(Window &window)
     drawDiceArea(); // overlay dadu di tengah board
     drawPopup();
     drawBuyDialog();
+    drawAuctionDialog();
     drawLogPopup();
     drawSavePopup();
     DrawFPS(LEFT_PANEL + 4, 4);
@@ -1764,7 +1832,7 @@ void GameScreen::drawBuyDialog()
                 Bank *bank = gm->getState().getBank();
                 // Cari Property* dari board
                 Board *board = gm->getState().getBoard();
-                Tile *tile = board->getTile(buyDialog.tileIdx);
+                Tile *tile = board->getTile(buyDialog.tileIdx + 1);
                 auto *pt = dynamic_cast<PropertyTile *>(tile);
                 if (player && bank && pt)
                 {
@@ -1794,7 +1862,7 @@ void GameScreen::drawBuyDialog()
                 Player *player = gm->getState().getCurrPlayer();
                 Bank *bank = gm->getState().getBank();
                 Board *board = gm->getState().getBoard();
-                Tile *tile = board->getTile(buyDialog.tileIdx);
+                Tile *tile = board->getTile(buyDialog.tileIdx + 1);
                 auto *pt = dynamic_cast<PropertyTile *>(tile);
                 if (player && bank && pt)
                 {
@@ -1813,6 +1881,305 @@ void GameScreen::drawBuyDialog()
             buyDialog.visible = false;
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  AuctionDialog — GameScreen.cpp
+//
+//  Tempel ke GameScreen.cpp, setelah blok drawBuyDialog().
+//
+//  Alur kerja:
+//    1. LelangCommand::execute() → setPhase(AUCTION) + setupAuction()
+//    2. syncDiceResult() deteksi phase AUCTION → triggerAuctionDialog()
+//    3. drawAuctionDialog() render tiap frame; pemain BID/PASS via tombol
+//    4. Saat isAuctionOver() == true → closeAuction() + setPhase(PLAYER_TURN)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Auction Dialog ───────────────────────────────────────────────────────────
+
+void GameScreen::triggerAuctionDialog(int tileIdx)
+{
+    auctionDialog.tileIdx    = tileIdx;
+    auctionDialog.visible    = true;
+    auctionDialog.bidInput   = "";
+    auctionDialog.inputActive = false;
+    auctionDialog.errorMsg   = "";
+    auctionDialog.errorTimer = 0.f;
+    syncAuctionState();
+}
+
+void GameScreen::syncAuctionState()
+{
+    // Tarik data terkini dari AuctionManager ke struct lokal untuk render
+    if (!isRealMode()) return;
+
+    GameMaster*     gm = guiManager->getGameMaster();
+    AuctionManager* am = gm->getState().getAuctionManager();
+    if (!am) return;
+
+    auctionDialog.currentBid = am->getCurrentBid();
+
+    Player* highest = am->getHighestBidder();
+    auctionDialog.highestBidder = highest ? highest->getUsername() : "-";
+
+    Player* current = am->getCurrentBidder();
+    auctionDialog.currentBidder = current ? current->getUsername() : "-";
+}
+
+void GameScreen::drawAuctionDialog()
+{
+    if (!auctionDialog.visible || auctionDialog.tileIdx < 0)
+        return;
+
+    // Sync data lelang terkini dari AuctionManager setiap frame
+    syncAuctionState();
+
+    // ── Ambil data properti dari MockGameState ────────────────────────────
+    auto& prop = gameState.properties[auctionDialog.tileIdx];
+
+    // ── Overlay gelap ─────────────────────────────────────────────────────
+    DrawRectangle(0, 0, SCREEN_W, SCREEN_H, {0, 0, 0, 180});
+
+    // ── Panel utama ───────────────────────────────────────────────────────
+    constexpr float PW = 460.f, PH = 380.f;
+    float px = SCREEN_W / 2.f - PW / 2.f;
+    float py = SCREEN_H / 2.f - PH / 2.f;
+
+    DrawRectangle((int)px, (int)py, (int)PW, (int)PH, {25, 27, 38, 255});
+    DrawRectangleLinesEx({px, py, PW, PH}, 2.f, {180, 130, 50, 255});
+
+    // ── Header ────────────────────────────────────────────────────────────
+    Color hdrCol = prop.colorGroup.empty()
+                       ? Color{70, 55, 20, 255}
+                       : getGroupColor(prop.colorGroup);
+    DrawRectangle((int)px, (int)py, (int)PW, 52, hdrCol);
+
+    // Judul "LELANG"
+    const char* title = "LELANG";
+    int tw = MeasureText(title, 11);
+    DrawText(title, (int)(px + PW / 2 - tw / 2), (int)(py + 6), 11,
+             {255, 220, 100, 200});
+
+    // Nama properti
+    std::string propName = prop.name.empty()
+                               ? TILE_DEFS[auctionDialog.tileIdx].code
+                               : prop.name;
+    int nw = MeasureText(propName.c_str(), 18);
+    DrawText(propName.c_str(), (int)(px + PW / 2 - nw / 2), (int)(py + 22), 18, WHITE);
+
+    // ── Baris info lelang ─────────────────────────────────────────────────
+    float ry = py + 68;
+
+    // Tawaran tertinggi saat ini
+    DrawText("Tawaran Tertinggi", (int)(px + 20), (int)ry, 12, {140, 140, 180, 255});
+    std::string bidStr = auctionDialog.currentBid == 0
+                             ? "Belum ada"
+                             : "M" + std::to_string(auctionDialog.currentBid);
+    Color bidCol = auctionDialog.currentBid == 0
+                       ? Color{140, 140, 140, 255}
+                       : Color{100, 220, 100, 255};
+    int bw = MeasureText(bidStr.c_str(), 16);
+    DrawText(bidStr.c_str(), (int)(px + PW - 20 - bw), (int)(ry - 2), 16, bidCol);
+
+    ry += 24;
+
+    // Penawar tertinggi
+    DrawText("Oleh", (int)(px + 20), (int)ry, 11, {120, 120, 160, 255});
+    int hw = MeasureText(auctionDialog.highestBidder.c_str(), 12);
+    DrawText(auctionDialog.highestBidder.c_str(),
+             (int)(px + PW - 20 - hw), (int)ry, 12, {240, 200, 80, 255});
+
+    ry += 20;
+    DrawLine((int)(px + 16), (int)(ry), (int)(px + PW - 16), (int)(ry),
+             {60, 60, 90, 255});
+    ry += 12;
+
+    // Giliran siapa sekarang
+    std::string turnLabel = "Giliran: " + auctionDialog.currentBidder;
+    int tlw = MeasureText(turnLabel.c_str(), 14);
+    DrawText(turnLabel.c_str(), (int)(px + PW / 2 - tlw / 2), (int)ry, 14,
+             {200, 180, 255, 255});
+
+    ry += 28;
+
+    // ── Input BID ─────────────────────────────────────────────────────────
+    DrawText("Jumlah Bid:", (int)(px + 20), (int)ry, 12, {160, 160, 200, 255});
+    ry += 20;
+
+    Rectangle inputBox = {px + 20, ry, PW - 40, 36};
+    Color inputBorder = auctionDialog.inputActive
+                            ? Color{180, 150, 80, 255}
+                            : Color{80, 80, 120, 255};
+    DrawRectangleRec(inputBox, {35, 37, 50, 255});
+    DrawRectangleLinesEx(inputBox, 1.5f, inputBorder);
+
+    std::string displayInput = auctionDialog.bidInput.empty()
+                                   ? "Ketik jumlah..."
+                                   : "M" + auctionDialog.bidInput;
+    Color inputTextCol = auctionDialog.bidInput.empty()
+                             ? Color{80, 80, 110, 255}
+                             : WHITE;
+    DrawText(displayInput.c_str(), (int)(inputBox.x + 10), (int)(inputBox.y + 10),
+             13, inputTextCol);
+
+    // Kursor berkedip
+    if (auctionDialog.inputActive && ((int)(GetTime() * 2) % 2 == 0))
+    {
+        int cw = MeasureText(("M" + auctionDialog.bidInput).c_str(), 13);
+        DrawText("|", (int)(inputBox.x + 12 + cw), (int)(inputBox.y + 10), 13,
+                 {200, 200, 255, 255});
+    }
+
+    ry += 44;
+
+    // ── Pesan error ───────────────────────────────────────────────────────
+    if (!auctionDialog.errorMsg.empty() && auctionDialog.errorTimer > 0.f)
+    {
+        auctionDialog.errorTimer -= GetFrameTime();
+        int ew = MeasureText(auctionDialog.errorMsg.c_str(), 10);
+        DrawText(auctionDialog.errorMsg.c_str(),
+                 (int)(px + PW / 2 - ew / 2), (int)ry, 10,
+                 {220, 80, 80, 255});
+    }
+
+    ry += 18;
+
+    // ── Tombol BID & PASS ─────────────────────────────────────────────────
+    float btnW  = PW / 2.f - 24.f;
+    float btnY  = py + PH - 56.f;
+    Vector2 mouse = GetMousePosition();
+
+    // Tombol BID
+    Rectangle bidBtn = {px + 16, btnY, btnW, 40};
+    bool bidHover = CheckCollisionPointRec(mouse, bidBtn);
+    Color bidBg = bidHover ? Color{60, 160, 230, 255} : Color{40, 110, 180, 255};
+    DrawRectangleRec(bidBtn, bidBg);
+    DrawRectangleLinesEx(bidBtn, 1.5f, {100, 200, 255, 255});
+    const char* bidLbl = "BID";
+    int blw = MeasureText(bidLbl, 14);
+    DrawText(bidLbl, (int)(bidBtn.x + btnW / 2 - blw / 2), (int)(btnY + 13), 14, WHITE);
+
+    // Tombol PASS
+    Rectangle passBtn = {px + PW / 2.f + 8.f, btnY, btnW, 40};
+    bool passHover = CheckCollisionPointRec(mouse, passBtn);
+    Color passBg = passHover ? Color{160, 80, 80, 255} : Color{110, 50, 50, 255};
+    DrawRectangleRec(passBtn, passBg);
+    DrawRectangleLinesEx(passBtn, 1.5f, {200, 100, 100, 255});
+    const char* passLbl = "PASS";
+    int plw = MeasureText(passLbl, 14);
+    DrawText(passLbl, (int)(passBtn.x + btnW / 2 - plw / 2), (int)(btnY + 13), 14,
+             WHITE);
+
+    // ── Handle keyboard untuk input bid ──────────────────────────────────
+    if (auctionDialog.inputActive)
+    {
+        int key = GetCharPressed();
+        while (key > 0)
+        {
+            if (key >= '0' && key <= '9' && auctionDialog.bidInput.size() < 10)
+                auctionDialog.bidInput += (char)key;
+            key = GetCharPressed();
+        }
+        if (IsKeyPressed(KEY_BACKSPACE) && !auctionDialog.bidInput.empty())
+            auctionDialog.bidInput.pop_back();
+    }
+
+    // ── Handle klik ──────────────────────────────────────────────────────
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
+        // Aktifkan/nonaktifkan input box
+        auctionDialog.inputActive = CheckCollisionPointRec(mouse, inputBox);
+
+        if (bidHover)
+        {
+            // Validasi input
+            if (auctionDialog.bidInput.empty())
+            {
+                auctionDialog.errorMsg   = "Masukkan jumlah bid terlebih dahulu!";
+                auctionDialog.errorTimer = 2.f;
+            }
+            else if (isRealMode() && guiManager && guiManager->getGameMaster())
+            {
+                int amount = std::stoi(auctionDialog.bidInput);
+                AuctionManager* am =
+                    guiManager->getGameMaster()->getState().getAuctionManager();
+
+                if (!am->placeBid(amount))
+                {
+                    auctionDialog.errorMsg   = "Bid tidak valid — kurang dari tawaran tertinggi atau saldo tidak cukup!";
+                    auctionDialog.errorTimer = 2.5f;
+                }
+                else
+                {
+                    auctionDialog.bidInput = "";
+                    auctionDialog.errorMsg = "";
+
+                    // Cek apakah lelang sudah selesai setelah bid ini
+                    if (am->isAuctionOver())
+                    {
+                        _finalizeAuction();
+                        return;
+                    }
+                }
+            }
+        }
+        else if (passHover && isRealMode() && guiManager && guiManager->getGameMaster())
+        {
+            AuctionManager* am =
+                guiManager->getGameMaster()->getState().getAuctionManager();
+            am->passBid();
+            auctionDialog.bidInput = "";
+            auctionDialog.errorMsg = "";
+
+            if (am->isAuctionOver())
+            {
+                _finalizeAuction();
+                return;
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  _finalizeAuction()  [private helper]
+//
+//  Dipanggil dari drawAuctionDialog() saat isAuctionOver() == true.
+//  Menyelesaikan lelang, menutup dialog, dan reset phase ke PLAYER_TURN.
+// ─────────────────────────────────────────────────────────────────────────────
+void GameScreen::_finalizeAuction()
+{
+    if (!isRealMode() || !guiManager || !guiManager->getGameMaster()) return;
+
+    GameMaster*     gm   = guiManager->getGameMaster();
+    AuctionManager* am   = gm->getState().getAuctionManager();
+    Bank*           bank = gm->getState().getBank();
+
+    if (!am || !bank) return;
+
+    // Log sebelum closeAuction agar nama pemenang masih tersedia
+    Player* winner = am->getHighestBidder();
+    if (winner)
+    {
+        gm->log(winner->getUsername(), "LELANG",
+                "Menang lelang " +
+                am->getAuctionedProperty()->getName() +
+                " seharga M" + std::to_string(am->getCurrentBid()));
+    }
+    else
+    {
+        gm->log("-", "LELANG",
+                "Lelang " + am->getAuctionedProperty()->getName() +
+                " berakhir tanpa pemenang");
+    }
+
+    am->closeAuction(*bank);
+
+    auctionDialog.visible   = false;
+    auctionDialog.tileIdx    = -1;
+    auctionDialog.bidInput   = "";
+    auctionDialog.errorMsg   = "";
+
+    gm->getState().setPhase(GamePhase::PLAYER_TURN);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
