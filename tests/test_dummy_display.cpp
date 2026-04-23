@@ -18,7 +18,7 @@ private:
     char initial;
 
 public:
-    Player(std::string n, int m, char i) : name(n), money(m), initial(i) {}
+    Player(std::string n, int m, char i) : name(n), moneyToString(m), initial(i) {}
     std::string getName() const { return name; }
     int getBalance() const { return money; }
     char getInitial() const { return initial; }

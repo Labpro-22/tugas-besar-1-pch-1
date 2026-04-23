@@ -210,3 +210,43 @@ void StreetProperty::resetBuildings()
     buildingCount = 0;
     hasHotel = false;
 }
+
+string StreetProperty::cetakAkta() const
+{
+    ostringstream out;
+
+    printHeader(out);
+    printBasicInfo(out);
+
+    printLine(out, '-');
+
+    if (rentPrice.empty())
+    {
+        printFullRow(out, "Data sewa tidak tersedia");
+    }
+    else
+    {
+        for (const auto &[level, rent] : rentPrice)
+        {
+            string label;
+            if (level == 0)
+                label = "Sewa (unimproved)";
+            else if (level >= 1 && level <= 4)
+                label = "Sewa (" + to_string(level) + " rumah)";
+            else if (level == 5)
+                label = "Sewa (hotel)";
+            else
+                label = "Sewa (level " + to_string(level) + ")";
+
+            printRow(out, label, moneyToString(rent));
+        }
+    }
+
+    printLine(out, '-');
+    printRow(out, "Harga Rumah", moneyToString(getHouseUpgCost()));
+    printRow(out, "Harga Hotel", moneyToString(getHotelUpgCost()));
+
+    printFooterStatus(out);
+
+    return out.str();
+}

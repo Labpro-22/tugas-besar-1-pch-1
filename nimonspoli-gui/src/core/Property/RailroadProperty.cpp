@@ -66,3 +66,30 @@ string RailroadProperty::formattingTXT() const
 
     return getCode() + " RAILROAD " + ownerStr + " " + statusStr + " 1 0 0";
 }
+
+string RailroadProperty::cetakAkta() const
+{
+    ostringstream out;
+
+    printHeader(out);
+    printBasicInfo(out);
+
+    printLine(out, '-');
+
+    if (rentFactor.empty())
+    {
+        printFullRow(out, "Data sewa tidak tersedia");
+    }
+    else
+    {
+        for (const auto &[ownedCount, rent] : rentFactor)
+        {
+            string label = "Sewa (" + to_string(ownedCount) + " railroad)";
+            printRow(out, label, moneyToString(rent));
+        }
+    }
+
+    printFooterStatus(out);
+
+    return out.str();
+}

@@ -67,3 +67,31 @@ string UtilityProperty::formattingTXT() const
 
     return getCode() + " UTILITY " + ownerStr + " " + statusStr + " 1 0 0";
 }
+
+string UtilityProperty::cetakAkta() const
+{
+    ostringstream out;
+
+    printHeader(out);
+    printBasicInfo(out);
+
+    printLine(out, '-');
+
+    if (rentPrice.empty())
+    {
+        printFullRow(out, "Data sewa tidak tersedia");
+    }
+    else
+    {
+        for (const auto &[ownedCount, multiplier] : rentPrice)
+        {
+            printFullRow(out,
+                         "Punya " + to_string(ownedCount) +
+                             " utilitas: x" + to_string(multiplier));
+        }
+    }
+
+    printFooterStatus(out);
+
+    return out.str();
+}

@@ -44,6 +44,7 @@ public:
                            int ownerSameColorCount,
                            bool monopoly) const override;
     int calculateSellPrice() const override;
+    string cetakAkta() const override;
     string formattingTXT() const override;
     friend ostream &operator<<(ostream &os, const StreetProperty &p);
     void resetBuildings();
