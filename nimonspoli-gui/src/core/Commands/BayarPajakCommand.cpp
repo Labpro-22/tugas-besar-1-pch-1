@@ -2,7 +2,6 @@
 #include "../Player/Player.hpp"
 #include "../GameMaster/GameMaster.hpp"
 #include "../GameState/GameState.hpp"
-#include "../Property/StreetProperty.hpp"
 #include "../utils/ConfigLoader.hpp"
 #include <iostream>
 

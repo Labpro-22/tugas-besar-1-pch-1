@@ -1,9 +1,6 @@
 #include "BeliCommand.hpp"
 #include "../Player/Player.hpp"
 #include "../Property/Property.hpp"
-#include "../Property/StreetProperty.hpp"
-#include "../Property/RailroadProperty.hpp"
-#include "../Property/UtilityProperty.hpp"
 #include "../GameMaster/GameMaster.hpp"
 #include "../GameState/GameState.hpp"
 #include <iostream>
@@ -25,7 +22,7 @@ void BeliCommand::execute(GameMaster& gm) {
         return;
     }
 
-    GameState& gs = gm.getGameState();
+    GameState& gs = gm.getState();
 
     // Hanya berlaku untuk properti berstatus BANK
     if (property->getStatus() != PropertyStatus::BANK) {
@@ -34,22 +31,7 @@ void BeliCommand::execute(GameMaster& gm) {
         return;
     }
 
-    // ── Railroad & Utility: akuisisi gratis, langsung tanpa prompt ────────────
-    bool isRailroad = dynamic_cast<RailroadProperty*>(property) != nullptr;
-    bool isUtility  = dynamic_cast<UtilityProperty*>(property)  != nullptr;
-
-    if (isRailroad || isUtility) {
-        property->setOwner(currentPlayer->getUsername());
-        property->setStatus(PropertyStatus::OWNED);
-        currentPlayer->addProperty(property);
-
-        std::cout << "[DEBUG] " << currentPlayer->getUsername()
-                  << " mendapatkan " << property->getName()
-                  << " (" << property->getCode() << ") secara gratis." << std::endl;
-
-        gs.setPhase(GamePhase::PLAYER_TURN);
-        return;
-    }
+        // ── Railroad & Utility: akuisisi gratis, langsung tanpa prompt ────────────
 
     // ── Street: bergantung pada pilihan pemain (ditentukan GUI) ───────────────
     int price = property->getPurchasePrice();
