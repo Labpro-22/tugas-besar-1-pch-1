@@ -3,98 +3,115 @@
 #include "../Property/Property.hpp"
 #include "../Bank/Bank.hpp"
 #include <iostream>
+#include <algorithm>
 
 AuctionManager::AuctionManager()
     : auctionedProperty(nullptr), highestBidder(nullptr),
-      currentBid(0), isAuctionOngoing(false) {}
+      currentBid(0), currentParticipantIdx(0),
+      consecutivePassCount(0), isAuctionOngoing(false) {}
 
-void AuctionManager::setupAuction(Property *prop, const std::vector<Player *> &players)
-{
-    if (prop == nullptr)
-        return;
+void AuctionManager::setupAuction(Property* prop, Player* initiator,
+                                   const std::vector<Player*>& allPlayers) {
+    if (!prop || !initiator) return;
 
-    auctionedProperty = prop;
-    isAuctionOngoing = true;
-    highestBidder = nullptr;
+    auctionedProperty    = prop;
+    isAuctionOngoing     = true;
+    highestBidder        = nullptr;
+    currentBid           = 0;
+    consecutivePassCount = 0;
 
-    // Berdasarkan spesifikasi, lelang dimulai dari harga minimal tertentu
-    // Misal 10% dari harga dasar tanah (getLandPrice())
-    currentBid = prop->getPurchasePrice() * 0.1;
-
-    // Filter hanya pemain yang tidak bangkrut untuk ikut lelang
+    // Susun urutan peserta mulai dari pemain SETELAH initiator
     activeParticipants.clear();
-    for (Player *p : players)
-    {
+    auto it = std::find(allPlayers.begin(), allPlayers.end(), initiator);
+    int startIdx = 0;
+    if (it != allPlayers.end()) {
+        startIdx = (int)(it - allPlayers.begin()) + 1;
+    }
+
+    int n = (int)allPlayers.size();
+    for (int i = 0; i < n; ++i) {
+        Player* p = allPlayers[(startIdx + i) % n];
         if (p->getStatus() != PlayerStatus::BANKRUPT)
-        {
             activeParticipants.push_back(p);
-        }
-    }
-}
-
-bool AuctionManager::placeBid(Player *bidder, int amount)
-{
-    if (!isAuctionOngoing || bidder == nullptr)
-        return false;
-
-    // Validasi: Bid harus lebih tinggi dari bid saat ini dan pemain harus punya uang cukup
-    if (amount > currentBid && bidder->getBalance() >= amount)
-    {
-        currentBid = amount;
-        highestBidder = bidder;
-        return true;
     }
 
-    return false;
+    currentParticipantIdx = 0;
 }
 
-void AuctionManager::closeAuction(Bank &centralBank)
-{
-    if (!isAuctionOngoing)
-        return;
+bool AuctionManager::placeBid(Player* bidder, int amount) {
+    if (!isAuctionOngoing || !bidder) return false;
+    if (bidder != getCurrentParticipant()) return false;
 
-    if (highestBidder != nullptr && auctionedProperty != nullptr)
-    {
-        // Pemain membayar ke bank melalui koordinasi AuctionManager
-        highestBidder -= currentBid;
+    // Bid harus lebih tinggi dari bid saat ini dan pemain harus mampu
+    if (amount <= currentBid || !bidder->canAfford(amount)) return false;
 
-        // Atur kepemilikan properti ke pemenang lelang
+    currentBid           = amount;
+    highestBidder        = bidder;
+    consecutivePassCount = 0; // reset karena ada BID
+
+    // Maju ke peserta berikutnya
+    currentParticipantIdx = (currentParticipantIdx + 1) % (int)activeParticipants.size();
+    return true;
+}
+
+void AuctionManager::passBid() {
+    if (!isAuctionOngoing) return;
+
+    consecutivePassCount++;
+    currentParticipantIdx = (currentParticipantIdx + 1) % (int)activeParticipants.size();
+}
+
+void AuctionManager::closeAuction(Bank& /*centralBank*/) {
+    if (!isAuctionOngoing) return;
+
+    if (highestBidder && auctionedProperty) {
+        *highestBidder -= currentBid; // potong saldo pemenang
         auctionedProperty->setOwner(highestBidder->getUsername());
-
-        // Tambahkan properti ke daftar aset pemain (menggunakan method di Player)
+        auctionedProperty->setStatus(PropertyStatus::OWNED);
         highestBidder->addProperty(auctionedProperty);
 
-        std::cout << "Lelang berakhir! " << highestBidder->getUsername()
+        std::cout << "[DEBUG] Lelang selesai! " << highestBidder->getUsername()
                   << " memenangkan " << auctionedProperty->getName()
-                  << " seharga " << currentBid << std::endl;
-    }
-    else
-    {
-        std::cout << "Lelang berakhir tanpa pemenang." << std::endl;
+                  << " seharga M" << currentBid << std::endl;
+    } else {
+        std::cout << "[DEBUG] Lelang berakhir tanpa pemenang." << std::endl;
+        // Properti tetap milik Bank
     }
 
-    // Reset state lelang
-    isAuctionOngoing = false;
-    auctionedProperty = nullptr;
-    highestBidder = nullptr;
+    // Reset state
+    isAuctionOngoing     = false;
+    auctionedProperty    = nullptr;
+    highestBidder        = nullptr;
+    currentBid           = 0;
+    consecutivePassCount = 0;
+    activeParticipants.clear();
 }
 
-bool AuctionManager::isOngoing() const
-{
+bool AuctionManager::isAuctionOver() const {
+    if (!isAuctionOngoing) return true;
+    if (activeParticipants.empty()) return true;
+
+    // Selesai jika (jumlah_peserta - 1) PASS berturut-turut
+    return consecutivePassCount >= (int)activeParticipants.size() - 1;
+}
+
+bool AuctionManager::isOngoing() const {
     return isAuctionOngoing;
 }
 
-int AuctionManager::getCurrentBid() const
-{
+int AuctionManager::getCurrentBid() const {
     return currentBid;
 }
 
-Player *AuctionManager::getHighestBidder() const
-{
+Player* AuctionManager::getHighestBidder() const {
     return highestBidder;
 }
 
-Property *AuctionManager::getAuctionedProperty() const
-{
+Property* AuctionManager::getAuctionedProperty() const {
     return auctionedProperty;
+}
+
+Player* AuctionManager::getCurrentParticipant() const {
+    if (activeParticipants.empty()) return nullptr;
+    return activeParticipants[currentParticipantIdx];
 }
