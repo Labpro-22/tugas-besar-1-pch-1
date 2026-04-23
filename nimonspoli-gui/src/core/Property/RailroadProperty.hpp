@@ -23,7 +23,7 @@ public:
     int calculateSellPrice() const override;
     string cetakAkta() const override;
     string formattingTXT() const override;
-    friend ostream &operator<<(ostream &os, const RailroadProperty &p);
+    string printList() const override;
 };
 
 #endif

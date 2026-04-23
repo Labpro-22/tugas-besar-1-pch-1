@@ -29,24 +29,6 @@ int UtilityProperty::calculateSellPrice() const
     return getMortageValue();
 }
 
-ostream &operator<<(ostream &os, const UtilityProperty &p)
-{
-    string namaKode = p.getName() + " (" + p.getCode() + ")";
-    os << left << setw(26) << namaKode;
-
-    os << setw(10) << "";
-
-    string harga = "M" + to_string(p.getMortageValue() * 2);
-    os << setw(8) << harga;
-
-    if (p.getStatus() == PropertyStatus::MORTGAGED)
-        os << "MORTGAGED [M]";
-    else
-        os << "OWNED";
-
-    return os;
-}
-
 string UtilityProperty::formattingTXT() const
 {
     string statusStr;
@@ -92,6 +74,22 @@ string UtilityProperty::cetakAkta() const
     }
 
     printFooterStatus(out);
+
+    return out.str();
+}
+
+string UtilityProperty::printList() const
+{
+    ostringstream out;
+
+    string namaKode = getName() + " (" + getCode() + ")";
+    out << left << setw(26) << namaKode;
+    out << setw(10) << "";
+
+    string harga = "M" + to_string(getPurchasePrice());
+    out << setw(8) << harga;
+
+    out << Property::statusToString(getStatus());
 
     return out.str();
 }

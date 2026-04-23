@@ -1,6 +1,7 @@
 #include "Player.hpp"
 #include "../Property/Property.hpp"
 #include <sstream>
+#include <map>
 
 Player::Player(const std::string &username, int startingBalance) : username(username),
                                                                    balance(startingBalance),
@@ -224,27 +225,36 @@ string Player::cetakProperti() const
 {
     ostringstream out;
 
-    out << "=== Properti Milik: " << getUsername() << " ===\n";
-
     if (properties.empty())
     {
-        out << "Kamu belum memiliki propreti apapun\n";
+        out << "Kamu belum memiliki properti apapun.\n";
         return out.str();
     }
 
-    for (size_t i = 0; i < properties.size(); ++i)
+    out << "=== Properti Milik: " << getUsername() << " ===\n\n";
+
+    map<string, vector<Property *>> grouped;
+    int totalWealth = 0;
+
+    for (Property *prop : properties)
     {
-        if (properties[i] == nullptr)
+        if (!prop)
             continue;
 
-        out << "[" << i + 1 << "]\n";
-        out << properties[i]->cetakAkta();
-
-        if (i + 1 < properties.size())
-        {
-            out << "\n";
-        }
+        grouped[prop->getColorGroup()].push_back(prop);
+        totalWealth += prop->calculateSellPrice();
     }
 
+    for (const auto &[group, props] : grouped)
+    {
+        out << "[" << group << "]\n";
+        for (Property *prop : props)
+        {
+            out << "  - " << prop->printList() << "\n";
+        }
+        out << "\n";
+    }
+
+    out << "Total kekayaan properti: M" << totalWealth << "\n";
     return out.str();
 }

@@ -84,21 +84,6 @@ string Property::moneyToString(int value)
     return "M" + to_string(value);
 }
 
-string Property::statusToString(PropertyStatus status)
-{
-    switch (status)
-    {
-    case PropertyStatus::BANK:
-        return "BANK";
-    case PropertyStatus::OWNED:
-        return "OWNED";
-    case PropertyStatus::MORTGAGED:
-        return "MORTGAGED";
-    default:
-        return "UNKNOWN";
-    }
-}
-
 void Property::printLine(ostringstream &out, char c)
 {
     out << "+" << string(INNER_WIDTH + 2, c) << "+\n";
@@ -136,12 +121,6 @@ void Property::printCenteredRow(ostringstream &out, const string &text)
         << " |\n";
 }
 
-// string Property::makeHeaderTitle() const
-// {
-//     return "[" + getColorGroup() + "] " +
-//            getName() + " (" + getCode() + ")";
-// }
-
 void Property::printHeader(ostringstream &out) const
 {
     printLine(out, '=');
@@ -167,4 +146,19 @@ void Property::printFooterStatus(ostringstream &out) const
 
     printFullRow(out, "Status : " + statusLine);
     printLine(out, '=');
+}
+
+string Property::statusToString(PropertyStatus status)
+{
+    switch (status)
+    {
+    case PropertyStatus::BANK:
+        return "BANK";
+    case PropertyStatus::OWNED:
+        return "OWNED";
+    case PropertyStatus::MORTGAGED:
+        return "MORTGAGED [M]";
+    default:
+        return "UNKNOWN";
+    }
 }

@@ -155,29 +155,6 @@ int StreetProperty::calculateSellPrice() const
     return getPurchasePrice() + buildingValue;
 }
 
-ostream &operator<<(ostream &os, const StreetProperty &p)
-{
-    string namaKode = p.getName() + " (" + p.getCode() + ")";
-    os << left << setw(26) << namaKode;
-
-    string bangunan = "";
-    if (p.hasHotel)
-        bangunan = "Hotel";
-    else if (p.buildingCount > 0)
-        bangunan = to_string(p.buildingCount) + " rumah";
-    os << setw(10) << bangunan;
-
-    string harga = "M" + to_string(p.getPurchasePrice());
-    os << setw(8) << harga;
-
-    if (p.getStatus() == PropertyStatus::MORTGAGED)
-        os << "MORTGAGED [M]";
-    else
-        os << "OWNED";
-
-    return os;
-}
-
 string StreetProperty::formattingTXT() const
 {
     string statusStr;
@@ -247,6 +224,29 @@ string StreetProperty::cetakAkta() const
     printRow(out, "Harga Hotel", moneyToString(getHotelUpgCost()));
 
     printFooterStatus(out);
+
+    return out.str();
+}
+
+string StreetProperty::printList() const
+{
+    ostringstream out;
+
+    string namaKode = getName() + " (" + getCode() + ")";
+    out << left << setw(26) << namaKode;
+
+    string bangunan = "";
+    if (hasHotel)
+        bangunan = "Hotel";
+    else if (buildingCount > 0)
+        bangunan = to_string(buildingCount) + " rumah";
+
+    out << setw(10) << bangunan;
+
+    string harga = "M" + to_string(getPurchasePrice());
+    out << setw(8) << harga;
+
+    out << Property::statusToString(getStatus());
 
     return out.str();
 }

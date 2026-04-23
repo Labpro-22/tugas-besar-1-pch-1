@@ -67,7 +67,7 @@ public:
     virtual string cetakAkta() const = 0;
     virtual string formattingTXT() const = 0;
 
-    friend ostream &operator<<(ostream &os, const Property &p);
+    virtual string printList() const = 0;
 };
 
 #endif
