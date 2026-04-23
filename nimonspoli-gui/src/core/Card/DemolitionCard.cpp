@@ -2,14 +2,9 @@
 #include "../GameState/GameState.hpp"
 #include "../Player/Player.hpp"
 #include "../Property/Property.hpp"
+#include "../Property/StreetProperty.hpp"
 
-class Property;
-
-DemolitionCard::DemolitionCard()
-{
-}
-
-DemolitionCard::DemolitionCard(const string &type, const string &description, bool used)
+DemolitionCard::DemolitionCard() : SkillCard("Hancurkan properti milik lawan", "DemolitionCard")
 {
 }
 
@@ -25,13 +20,17 @@ void DemolitionCard::execute(Player &p, GameState &gs)
     {
         if (other == &p)
             continue;
-        if (other->getPropertyCount() > 0)
+        vector<Property *> props = other->getProperties();
+        for (Property *prop : props)
         {
-            Property *prop = other->getProperties()[0];
-            other->removeProperty(prop);
-            prop->clearOwner();
-            prop->setStatus(PropertyStatus::BANK);
-            break;
+            StreetProperty *sp = dynamic_cast<StreetProperty *>(prop);
+            if (sp && (sp->getBuildingCount() > 0 || sp->gethasHotel()))
+            {
+                sp->sellAllBuildings();
+                break;
+            }
         }
+        break;
     }
+    markUsed();
 }

@@ -8,7 +8,6 @@ class DemolitionCard : public SkillCard
 {
 public:
     DemolitionCard();
-    DemolitionCard(const string &type, const string &description, bool used);
     ~DemolitionCard();
     void execute(Player &p, GameState &gs) override;
 };

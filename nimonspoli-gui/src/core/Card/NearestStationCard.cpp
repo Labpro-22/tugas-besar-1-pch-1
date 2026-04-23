@@ -1,13 +1,10 @@
 #include "NearestStationCard.hpp"
 #include "../Player/Player.hpp"
 #include "../GameState/GameState.hpp"
+#include "../GameMaster/GameMaster.hpp"
 #include "../Board/Board.hpp"
 
-NearestStationCard::NearestStationCard()
-{
-}
-
-NearestStationCard::NearestStationCard(const string &type, const string &description) : ChanceCard(type, description)
+NearestStationCard::NearestStationCard() : ChanceCard("Pergi ke stasiun terdekat.")
 {
 }
 
@@ -42,5 +39,9 @@ void NearestStationCard::execute(Player &p, GameState &gs)
     }
 
     if (nearestIdx >= 0)
-        p.setPosition(nearestIdx);
+    {
+        GameMaster *gm = gs.getGameMaster();
+        if (gm)
+            gm->movePlayer(&p, minSteps);
+    }
 }

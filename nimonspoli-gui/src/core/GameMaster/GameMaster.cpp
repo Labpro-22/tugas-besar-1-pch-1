@@ -75,33 +75,35 @@ void GameMaster::handleCommand(const std::string &rawInput)
     (void)rawInput; // placeholder — diisi oleh tim CLI/GUI
 }
 
-void GameMaster::beginTurn(){
-        state.setPhase(GamePhase::PLAYER_TURN);
-        state.setHasRolled(false);
-        state.setHasUsedCard(false);
-        state.setHasExtraTurn(false);
+void GameMaster::beginTurn()
+{
+    state.setPhase(GamePhase::PLAYER_TURN);
+    state.setHasRolled(false);
+    state.setHasUsedCard(false);
+    state.setHasExtraTurn(false);
 
-        distributeSkillCards();
+    distributeSkillCards();
 
-        Player *cur = state.getCurrPlayer();
-        if (cur)
-        {
-            log(cur->getUsername(), "TURN_START",
-                "Giliran Turn " + std::to_string(state.getCurrTurn()));
-        }
+    Player *cur = state.getCurrPlayer();
+    if (cur)
+    {
+        log(cur->getUsername(), "TURN_START",
+            "Giliran Turn " + std::to_string(state.getCurrTurn()));
     }
+}
 
-void GameMaster::endTurn() {
+void GameMaster::endTurn()
+{
     tickFestivalDurations();
- 
-    if (!state.getHasExtraTurn()) {
+
+    if (!state.getHasExtraTurn())
+    {
+        // Satu siklus penuh (semua pemain sudah jalan) → naikkan turn
         int prevIdx = state.getCurrPlayerIdx();
         state.nextPlayer();
-        int newIdx  = state.getCurrPlayerIdx();
- 
-        // Wrap-around terjadi jika newIdx < prevIdx (index "melompat mundur")
-        // Ini lebih robust daripada <= karena handle skip pemain BANKRUPT.
-        if (newIdx < prevIdx) {
+        if (state.getCurrPlayerIdx() <= prevIdx)
+        {
+            // Sudah berputar penuh
             state.advanceTurn();
         }
     }
@@ -111,27 +113,33 @@ void GameMaster::endTurn() {
 // ─────────────────────────────────────────────
 //  Pergerakan pemain
 // ─────────────────────────────────────────────
-
 void GameMaster::movePlayer(Player *player, int steps)
 {
     if (!player || !state.getBoard())
         return;
 
     Board *board = state.getBoard();
-    int boardSize = board->getSize();
-    Tile *curTile = board->getTile(0); // placeholder; idealnya Player simpan idx
 
-    // Cari posisi saat ini via kode petak
-    // (Player menyimpan Tile*, kita perlu indeksnya)
-    // Loop board untuk temukan indeks player sekarang
-    int curIdx   = player->getPosition();
-    bool passedGo = (curIdx + steps) >= boardSize;
-    int targetIdx = (curIdx + steps) % boardSize;
+    int curIdx = player->getPosition();
+    int goIdx = 1; // GO selalu di id=1
 
-    if (passedGo) {
-        Tile* goTile = board->getTile(0);
-        GoTile* go   = dynamic_cast<GoTile*>(goTile);
-        if (go) {
+    // Hitung target — wrap dalam range 1..40
+    int targetIdx = curIdx + steps;
+    bool passedGo = false;
+
+    if (targetIdx > 40)
+    {
+        targetIdx = ((targetIdx - 1) % 40) + 1; // wrap 1-40
+        passedGo = true;
+    }
+
+    // Bayar gaji GO
+    if (passedGo)
+    {
+        Tile *goTile = board->getTile(goIdx);
+        GoTile *go = dynamic_cast<GoTile *>(goTile);
+        if (go)
+        {
             state.getBank()->payPlayer(player, go->getSalary());
             log(player->getUsername(), "GO_SALARY",
                 "Melewati GO, menerima M" + std::to_string(go->getSalary()));
@@ -140,7 +148,6 @@ void GameMaster::movePlayer(Player *player, int steps)
 
     player->setPosition(targetIdx);
 
-    // Trigger petak yang diinjak
     Tile *landedTile = board->getTile(targetIdx);
     if (landedTile)
     {
@@ -149,11 +156,6 @@ void GameMaster::movePlayer(Player *player, int steps)
                 " (" + landedTile->getTileName() + ")");
         landedTile->onLanded(*player, state);
     }
-    cout << "Player " << player->getUsername() << " sekarang berada di petak " << player->getPosition() << endl;
-    cout << "movePlayer: curIdx=" << curIdx 
-     << " steps=" << steps 
-     << " target=" << targetIdx 
-     << " player=" << player->getUsername() << endl;
 }
 
 void GameMaster::teleportPlayer(Player *player, int targetIndex, bool passThroughGo)
@@ -683,13 +685,13 @@ void GameMaster::useSkillCard(Player *player, SkillCard *card, GameState &gs)
         return;
     if (gs.getHasUsedCard())
         return;
-    if (card->getUsed())
+    if (card->isUsed())
         return;
 
     card->execute(*player, gs);
     gs.getLogger()->addLog(gs.getCurrTurn(), player->getUsername(), "SKILL_CARD", card->getDescription());
 
-    card->setUsed(true);
+    card->markUsed();
     const vector<SkillCard *> &hand = player->getHand();
     for (int i = 0; i < (int)hand.size(); i++)
     {

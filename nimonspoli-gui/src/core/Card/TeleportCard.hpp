@@ -11,7 +11,6 @@ private:
 
 public:
     TeleportCard();
-    TeleportCard(const string &type, const string &description, bool used);
     ~TeleportCard();
     void execute(Player &p, GameState &gs) override;
     void setTargetPosition(int pos, GameState &gs);

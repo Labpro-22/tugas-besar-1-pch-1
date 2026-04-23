@@ -2,12 +2,13 @@
 #include "../Player/Player.hpp"
 #include "../GameState/GameState.hpp"
 
-DoctorFeeCard::DoctorFeeCard()
+DoctorFeeCard::DoctorFeeCard() : GeneralFundCard("Biaya dokter. Bayar M700."), doctorFee(700)
 {
 }
 
-DoctorFeeCard::DoctorFeeCard(const string &type, const string &description, int doctorFee) : GeneralFundCard(type, description), doctorFee(doctorFee)
+int DoctorFeeCard::getDoctorFee() const
 {
+    return doctorFee;
 }
 
 DoctorFeeCard::~DoctorFeeCard()

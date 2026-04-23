@@ -11,8 +11,8 @@ private:
 
 public:
     ElectionCard();
-    ElectionCard(const string &type, const string &description, int amountPerPlayer);
     ~ElectionCard();
+    int getAmountPerPlayer() const;
     void execute(Player &p, GameState &gs) override;
 };
 

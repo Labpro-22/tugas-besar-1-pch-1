@@ -3,13 +3,7 @@
 #include "../GameState/GameState.hpp"
 #include "../Board/Board.hpp"
 
-class Board;
-
-TeleportCard::TeleportCard()
-{
-}
-
-TeleportCard::TeleportCard(const string &type, const string &description, bool used) : SkillCard(type, description, used), targetPosition(-999)
+TeleportCard::TeleportCard() : SkillCard("Pindah ke petak manapun", "TeleportCard"), targetPosition(-999)
 {
 }
 
@@ -30,5 +24,7 @@ void TeleportCard::execute(Player &p, GameState &gs)
 {
     if (targetPosition == -999)
         return;
-    p.setPosition(targetPosition);
+    GameMaster *gm = gs.getGameMaster();
+    if (gm)
+        gm->teleportPlayer(&p, targetPosition);
 }

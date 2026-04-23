@@ -8,7 +8,6 @@ class GoToJailCard : public ChanceCard
 {
 public:
     GoToJailCard();
-    GoToJailCard(const string &type, const string &description);
     ~GoToJailCard();
     void execute(Player &p, GameState &gs) override;
 };

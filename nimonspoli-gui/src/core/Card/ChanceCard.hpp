@@ -8,7 +8,7 @@ class ChanceCard : public Card
 {
 public:
     ChanceCard();
-    ChanceCard(const string &type, const string &description);
+    ChanceCard(const string &description);
     virtual ~ChanceCard();
     virtual void execute(Player &p, GameState &gs) = 0;
 };

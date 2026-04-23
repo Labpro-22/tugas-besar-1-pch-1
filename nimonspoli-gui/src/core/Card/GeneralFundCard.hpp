@@ -8,7 +8,7 @@ class GeneralFundCard : public Card
 {
 public:
     GeneralFundCard();
-    GeneralFundCard(const string &type, const string &description);
+    GeneralFundCard(const string &description);
     virtual ~GeneralFundCard();
     virtual void execute(Player &p, GameState &gs) = 0;
 };

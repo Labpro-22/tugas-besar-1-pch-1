@@ -1,23 +1,25 @@
 #include "SkillCard.hpp"
 
-SkillCard::SkillCard()
-{
-}
+SkillCard::SkillCard() : Card(""), type(""), used(false) {}
 
-SkillCard::SkillCard(const string &type, const string &description, bool used) : Card(type, description), used(used)
-{
-}
+SkillCard::SkillCard(const string &description, const string &type)
+    : Card(description), type(type), used(false) {}
 
 SkillCard::~SkillCard()
 {
 }
 
-bool SkillCard::getUsed()
+bool SkillCard::isUsed() const
 {
     return used;
 }
 
-void SkillCard::setUsed(bool newUsed)
+void SkillCard::markUsed()
 {
-    used = newUsed;
+    used = true;
+}
+
+string SkillCard::getType()
+{
+    return type;
 }

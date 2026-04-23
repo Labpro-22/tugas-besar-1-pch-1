@@ -2,16 +2,17 @@
 #include "../Player/Player.hpp"
 #include "../GameState/GameState.hpp"
 
-BirthdayCard::BirthdayCard()
-{
-}
-
-BirthdayCard::BirthdayCard(const string &type, const string &description, int amountPerPlayer) : GeneralFundCard(type, description), amountPerPlayer(amountPerPlayer)
+BirthdayCard::BirthdayCard() : GeneralFundCard("Ini adalah hari ulang tahun Anda. Dapatkan M100 dari setiap pemain."), amountPerPlayer(100)
 {
 }
 
 BirthdayCard::~BirthdayCard()
 {
+}
+
+int BirthdayCard::getAmountPerPlayer() const
+{
+    return amountPerPlayer;
 }
 
 void BirthdayCard::execute(Player &p, GameState &gs)

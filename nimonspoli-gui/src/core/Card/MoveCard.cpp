@@ -1,17 +1,12 @@
 #include "MoveCard.hpp"
 #include "../Player/Player.hpp"
 #include "../GameState/GameState.hpp"
+#include "../GameMaster/GameMaster.hpp"
 #include "../Board/Board.hpp"
 
-class Board;
+MoveCard::MoveCard() : MoveCard(rand() % 6 + 1) {}
 
-MoveCard::MoveCard()
-{
-}
-
-MoveCard::MoveCard(const string &type, const string &description, bool used, int steps) : SkillCard(type, description, used), steps(steps)
-{
-}
+MoveCard::MoveCard(int steps) : SkillCard("Maju " + to_string(steps) + " Petak", "MoveCard"), steps(steps) {}
 
 MoveCard::~MoveCard()
 {
@@ -24,7 +19,9 @@ int MoveCard::getSteps() const
 
 void MoveCard::execute(Player &p, GameState &gs)
 {
-    int boardSize = gs.getBoard()->getSize();
-    int randomNum = (p.getPosition() + rand()) % boardSize;
-    p.setPosition(randomNum);
+    GameMaster *gm = gs.getGameMaster();
+    if (gm)
+    {
+        gm->movePlayer(&p, steps);
+    }
 }

@@ -7,14 +7,16 @@ using namespace std;
 class SkillCard : public Card
 {
 private:
+    string type;
     bool used;
 
 public:
     SkillCard();
-    SkillCard(const string &type, const string &description, bool used);
+    SkillCard(const string &description, const string &type);
     virtual ~SkillCard();
-    bool getUsed();
-    void setUsed(bool newUsed);
+    bool isUsed() const;
+    void markUsed();
+    string getType();
     virtual void execute(Player &p, GameState &gs) = 0;
 };
 

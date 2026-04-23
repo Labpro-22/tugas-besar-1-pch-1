@@ -1,15 +1,10 @@
 #include "LassoCard.hpp"
 #include "../Player/Player.hpp"
 #include "../GameState/GameState.hpp"
+#include "../GameMaster/GameMaster.hpp"
 #include "../Board/Board.hpp"
 
-class Board;
-
-LassoCard::LassoCard()
-{
-}
-
-LassoCard::LassoCard(const string &type, const string &description, bool used) : SkillCard(type, description, used)
+LassoCard::LassoCard() : SkillCard("Tarik lawan ke petakmu", "LassoCard")
 {
 }
 
@@ -39,5 +34,9 @@ void LassoCard::execute(Player &p, GameState &gs)
     }
 
     if (target)
-        target->setPosition(currPos);
+    {
+        GameMaster *gm = gs.getGameMaster();
+        if (gm)
+            gm->teleportPlayer(target, currPos);
+    }
 }

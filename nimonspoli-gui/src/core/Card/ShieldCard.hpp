@@ -11,9 +11,8 @@ private:
 
 public:
     ShieldCard();
-    ShieldCard(const string &type, const string &description, bool used, int duration);
     ~ShieldCard();
-    int getDuration();
+    int getDuration() const;
     void decreaseDuration();
     void execute(Player &p, GameState &gs) override;
 };

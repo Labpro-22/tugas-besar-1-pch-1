@@ -1,10 +1,10 @@
 #include "ChanceCard.hpp"
 
-ChanceCard::ChanceCard()
+ChanceCard::ChanceCard() : Card("")
 {
 }
 
-ChanceCard::ChanceCard(const string &type, const string &description) : Card(type, description)
+ChanceCard::ChanceCard(const string &description) : Card(description)
 {
 }
 

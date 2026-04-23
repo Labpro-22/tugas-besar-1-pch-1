@@ -11,8 +11,8 @@ private:
 
 public:
     BirthdayCard();
-    BirthdayCard(const string &type, const string &description, int amountPerPlayer);
     ~BirthdayCard();
+    int getAmountPerPlayer() const;
     void execute(Player &p, GameState &gs) override;
 };
 

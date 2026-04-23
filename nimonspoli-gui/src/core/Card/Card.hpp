@@ -10,16 +10,14 @@ class GameState;
 class Card
 {
 private:
-    string type;
     string description;
 
 public:
     Card();
-    Card(const string &type, const string &description);
+    Card(const string &description);
     virtual ~Card();
     virtual void execute(Player &p, GameState &gs) = 0;
     string getDescription();
-    string getType();
 };
 
 #endif

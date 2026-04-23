@@ -145,10 +145,15 @@ int main() {
                                 ? setup.names[i]
                                 : ("Pemain" + std::to_string(i + 1));
 
-                if (setup.isBot[i])
-                    players.push_back(new ComputerPlayer(name, miscCfg.initialBalance, setup.botDifficulty));
-                else
-                    players.push_back(new Player(name, miscCfg.initialBalance));
+                if (setup.isBot[i]) {
+                    ComputerPlayer* p = new ComputerPlayer(name, miscCfg.initialBalance, setup.botDifficulty);
+                    p->setPosition(1);  // ← tambah ini
+                    players.push_back(p);
+                } else {
+                    Player* p = new Player(name, miscCfg.initialBalance);
+                    p->setPosition(1);
+                    players.push_back(p);
+                }
             }
 
             GameState gs(

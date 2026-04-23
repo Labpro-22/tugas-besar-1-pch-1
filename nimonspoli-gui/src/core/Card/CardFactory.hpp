@@ -8,37 +8,38 @@
 #include "../Card/LassoCard.hpp"
 #include "../Card/DemolitionCard.hpp"
 
-
 //  CardFactory
 //  Buat SkillCard dari string type + nilai
 //  Dipakai oleh SaveLoadManager saat load
 //  Header-only karena simple static factory
-class CardFactory {
+class CardFactory
+{
 public:
     // value   = steps untuk MoveCard, discountPercent untuk DiscountCard
     // duration= sisa durasi untuk DiscountCard dan ShieldCard
-    static SkillCard* createSkillCard(const std::string& type,
-                                      double value    = 0,
-                                      int    duration = 0) {
+    static SkillCard *createSkillCard(const std::string &type,
+                                      double value = 0,
+                                      int duration = 0)
+    {
         if (type == "MoveCard")
-            return new MoveCard("MoveCard", "Maju sejumlah petak", false, (int)value);
+            return new MoveCard((int)value);
 
         if (type == "DiscountCard")
-            return new DiscountCard("DiscountCard", "Diskon sewa", false, value, duration);
+            return new DiscountCard((int)value, duration);
 
         if (type == "ShieldCard")
-            return new ShieldCard("ShieldCard", "Kebal 1 giliran", false, duration);
+            return new ShieldCard();
 
         if (type == "TeleportCard")
-            return new TeleportCard("TeleportCard", "Pindah ke petak mana saja", false);
+            return new TeleportCard();
 
         if (type == "LassoCard")
-            return new LassoCard("LassoCard", "Tarik pemain lawan", false);
+            return new LassoCard();
 
         if (type == "DemolitionCard")
-            return new DemolitionCard("DemolitionCard", "Hancurkan bangunan lawan", false);
+            return new DemolitionCard();
 
-        return nullptr; 
+        return nullptr;
     }
 };
 
