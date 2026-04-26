@@ -3,6 +3,7 @@
 #include "../Property/RailroadProperty.hpp"
 #include "../Property/UtilityProperty.hpp"
 #include "../Player/Player.hpp"
+#include "../Commands/BankruptCommand.hpp"
 
 // ═════════════════════════════════════════════
 //  Helper functions
@@ -338,10 +339,8 @@ void JailTile::payFine(Player &p, GameState &gs)
     {
         if (gm)
         {
-            int status = gm->handleDebtPayment(&p, jailFine, nullptr);
-            if (status == 2) {
-                gm->handleBankruptcy(&p, gs.getBank());
-            }
+            BankruptCommand cmd(*gm, gs, &p, nullptr, jailFine, false, 0);
+            cmd.execute(*gm);
             release(p);
         }
         else

@@ -9,6 +9,7 @@
 #include "../AuctionManager/AuctionManager.hpp"
 #include "../Property/Property.hpp"
 #include "../utils/TransactionLogger.hpp"
+#include "../Commands/BankruptCommand.hpp"
 
 #include <iostream>
 #include <algorithm>
@@ -621,24 +622,13 @@ void GameMaster::processNextCardPayment()
             // Kembalikan entri ini ke antrean agar tidak hilang —
             // BankruptcyDialog akan memanggilnya lagi setelah selesai.
             // (Tidak perlu: handleDebtPayment menyimpan debt+creditor ke GameState)
-            int status = handleDebtPayment(debtor, amount, creditor);
-            if (status == 1)
+            BankruptCommand cmd(*this, state, debtor, creditor, amount, false, 0);
+            cmd.execute(*this);
+            if (state.getPhase() == GamePhase::BANKRUPTCY)
             {
                 // Menunggu dialog likuidasi — stop di sini.
                 // BankruptcyDialog::onFinish() akan memanggil processNextCardPayment()
                 return;
-            }
-            else if (status == 2)
-            {
-                // status == 2: langsung bangkrut, lanjut ke entri berikutnya
-                if (creditor)
-                {
-                    handleBankruptcy(debtor, creditor);
-                }
-                else
-                {
-                    handleBankruptcy(debtor, state.getBank());
-                }
             }
         }
     }

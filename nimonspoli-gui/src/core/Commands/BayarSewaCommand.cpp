@@ -1,4 +1,5 @@
 #include "BayarSewaCommand.hpp"
+#include "BankruptCommand.hpp"
 
 #include "../Board/Board.hpp"
 #include "../Player/Player.hpp"
@@ -154,9 +155,7 @@ void BayarSewaCommand::processPayment(GameMaster &gm, Player *owner, int rent)
                                " (" + prop->getCode() + ")");
         }
 
-        int status = gm.handleDebtPayment(lander, rent, owner);
-        if (status == 2) {
-            gm.handleBankruptcy(lander, owner);
-        }
+        BankruptCommand cmd(gm, gm.getState(), lander, owner, rent, false, 0);
+        cmd.execute(gm);
     }
 }

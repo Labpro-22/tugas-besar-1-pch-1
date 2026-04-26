@@ -1,4 +1,5 @@
 #include "BayarPajakCommand.hpp"
+#include "BankruptCommand.hpp"
 #include "../Board/Board.hpp"
 
 BayarPajakCommand::BayarPajakCommand(Player *p, TaxTile *tile, Bank *bank,
@@ -36,10 +37,8 @@ void BayarPajakCommand::handlePPHChoice(int choice)
         {
             // Tidak mampu bayar → trigger bankruptcy flow
             if (gm) {
-                int liq = gm->handleDebtPayment(p, flatAmount, nullptr);
-                if (liq == 2) {
-                    gm->handleBankruptcy(p, gm->getState().getBank());
-                }
+                BankruptCommand cmd(*gm, gm->getState(), p, nullptr, flatAmount, false, 0);
+                cmd.execute(*gm);
             }
             return;
         }
@@ -56,10 +55,8 @@ void BayarPajakCommand::handlePPHChoice(int choice)
         {
             // Tidak mampu bayar → trigger bankruptcy flow
             if (gm) {
-                int liq = gm->handleDebtPayment(p, taxAmt, nullptr);
-                if (liq == 2) {
-                    gm->handleBankruptcy(p, gm->getState().getBank());
-                }
+                BankruptCommand cmd(*gm, gm->getState(), p, nullptr, taxAmt, false, 0);
+                cmd.execute(*gm);
             }
             return;
         }
@@ -78,10 +75,8 @@ void BayarPajakCommand::handlePBM()
     {
         // Tidak mampu bayar → trigger bankruptcy flow
         if (gm) {
-            int liq = gm->handleDebtPayment(p, flatAmount, nullptr);
-            if (liq == 2) {
-                gm->handleBankruptcy(p, gm->getState().getBank());
-            }
+            BankruptCommand cmd(*gm, gm->getState(), p, nullptr, flatAmount, false, 0);
+            cmd.execute(*gm);
         }
         return;
     }

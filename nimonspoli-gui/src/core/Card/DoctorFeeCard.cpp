@@ -1,4 +1,5 @@
 #include "DoctorFeeCard.hpp"
+#include "../Commands/BankruptCommand.hpp"
 #include "../Player/Player.hpp"
 #include "../GameState/GameState.hpp"
 #include "../GameMaster/GameMaster.hpp"
@@ -32,9 +33,7 @@ void DoctorFeeCard::execute(Player &p, GameState &gs)
     if (p.getBalance() >= doctorFee) {
         p -= doctorFee;
     } else {
-        int status = gm->handleDebtPayment(&p, doctorFee, nullptr);
-        if (status == 2) {
-            gm->handleBankruptcy(&p, gm->getState().getBank());
-        }
+        BankruptCommand cmd(*gm, gm->getState(), &p, nullptr, doctorFee, false, 0);
+        cmd.execute(*gm);
     }
 }
