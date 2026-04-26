@@ -1,0 +1,84 @@
+3 15
+2
+okay 925 STB ACTIVE HUMAN
+2
+FreeFromJailCard
+DemolitionCard
+semua 955 STB ACTIVE HUMAN
+2
+DemolitionCard
+DiscountCard 38 1
+okay semua 
+okay
+28
+GRT street BANK BANK 1 0 0
+TSK street BANK BANK 1 0 0
+GBR railroad BANK BANK 1 0 0
+BGR street BANK BANK 1 0 0
+DPK street okay OWNED 1 0 0
+BKS street BANK BANK 1 0 0
+MGL street BANK BANK 1 0 0
+PLN utiliy semua OWNED 1 0 0
+SOL street BANK BANK 1 0 0
+YOG street BANK BANK 1 0 0
+STB railroad okay OWNED 1 0 0
+MAL street BANK BANK 1 0 0
+SMG street BANK BANK 1 0 0
+SBY street BANK BANK 1 0 0
+MKS street semua OWNED 2 2 0
+BLP street BANK BANK 1 0 0
+MND street BANK BANK 1 0 0
+TUG railroad BANK BANK 1 0 0
+PLB street BANK BANK 1 0 0
+PKB street BANK BANK 1 0 0
+PAM utiliy BANK BANK 1 0 0
+MED street BANK BANK 1 0 0
+BDG street BANK BANK 1 0 0
+DEN street BANK BANK 1 0 0
+MTR street BANK BANK 1 0 0
+GUB railroad BANK BANK 1 0 0
+JKT street BANK BANK 1 0 0
+IKN street BANK BANK 1 0 0
+12
+ShieldCard
+TeleportCard
+DiscountCard 29 1
+LassoCard
+MoveCard 6
+MoveCard 5
+TeleportCard
+MoveCard 5
+LassoCard
+FreeFromJailCard
+ShieldCard
+MoveCard 6
+1
+DiscountCard 34 1
+27
+1 okay DRAW_SKILL_CARD Mendapat kartu kemampuan: DiscountCard
+1 okay TURN_START Giliran Turn 1
+1 okay DADU Berangkat dari tile ke-0 dengan langkah sebesar 8 menuju tile ke-8
+1 okay DADU Mendarat di DPK (DEPOK)
+1 semua DRAW_SKILL_CARD Mendapat kartu kemampuan: DemolitionCard
+1 semua TURN_START Giliran Turn 1
+1 semua DADU Berangkat dari tile ke-0 dengan langkah sebesar 12 menuju tile ke-12
+1 semua DADU Mendarat di PLN (PLN)
+1 semua TURN_START Giliran Turn 1
+1 semua DADU Berangkat dari tile ke-12 dengan langkah sebesar 9 menuju tile ke-21
+1 semua DADU Mendarat di MKS (MAKASSAR)
+2 okay DRAW_SKILL_CARD Mendapat kartu kemampuan: FreeFromJailCard
+2 okay TURN_START Giliran Turn 2
+2 okay SKILL_CARD Diskon 34%
+2 okay DADU Berangkat dari tile ke-8 dengan langkah sebesar 7 menuju tile ke-15
+2 okay DADU Mendarat di STB (STASIUN_BANDUNG)
+2 okay DISCOUNT_EXPIRED Efek diskon habis.
+2 semua DRAW_SKILL_CARD Mendapat kartu kemampuan: DiscountCard
+2 semua TURN_START Giliran Turn 2
+2 semua GO_SALARY Melewati GO, menerima M200
+2 semua TELEPORT Dipindahkan ke FES
+2 semua FESTIVAL MKS: sewa M18 -> M36, durasi 3 giliran
+2 semua DADU Berangkat dari tile ke-7 dengan langkah sebesar 8 menuju tile ke-15
+2 semua DADU Mendarat di STB (STASIUN_BANDUNG)
+2 semua SEWA Bayar M25 ke okay (STB)
+3 okay DRAW_SKILL_CARD Mendapat kartu kemampuan: DemolitionCard
+3 okay TURN_START Giliran Turn 3

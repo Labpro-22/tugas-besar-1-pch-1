@@ -28,7 +28,10 @@ all: directories $(TARGET)
 
 # Create necessary root directories
 directories:
-	@mkdir -p $(OBJ_DIR) $(BIN_DIR) $(DATA_DIR) $(CONFIG_DIR)
+	@if [ ! -d "$(OBJ_DIR)" ]; then mkdir "$(OBJ_DIR)"; fi
+	@if [ ! -d "$(BIN_DIR)" ]; then mkdir "$(BIN_DIR)"; fi
+	@if [ ! -d "$(DATA_DIR)" ]; then mkdir "$(DATA_DIR)"; fi
+	@if [ ! -d "$(CONFIG_DIR)" ]; then mkdir "$(CONFIG_DIR)"; fi
 
 # Link object files to create executable
 $(TARGET): $(OBJS)
@@ -37,7 +40,7 @@ $(TARGET): $(OBJS)
 
 # Compile source files into object files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	@mkdir -p $(dir $@)
+	@if [ ! -d "$(dir $@)" ]; then mkdir -p "$(dir $@)"; fi
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Run the game

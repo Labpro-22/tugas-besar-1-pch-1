@@ -32,7 +32,7 @@
 static const int MID_W = 88;
 static const int MID_SP = 86; // spasi di border tengah: MID_W - 2
 
-struct Tile { std::string code, tag; const char* color; };
+class Tile {public: std::string code, tag; const char* color; };
 static Tile TILES[41] = {
 /*0*/  {},
 /*1*/  {"GO",  "[DF]", C_DF}, {"GRT","[CK]",C_CK}, {"DNU","[DF]",C_DF},
@@ -55,7 +55,8 @@ static Tile TILES[41] = {
 // State game (dummy untuk testing — ganti dengan data asli)
 // Format info baris-2: "PX ^^^" atau "(2)" dll
 // ─────────────────────────────────────────────────────────────────
-struct TileState {
+class TileState {
+    public:
     std::string owner;    // "" = tidak ada, "P1".."P4"
     int buildings = 0;    // 0-4 = rumah, 5 = hotel
     std::vector<int> players; // bidak pemain yang ada di sini

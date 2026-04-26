@@ -1,0 +1,99 @@
+3 15
+2
+alamak 470 PAM ACTIVE HUMAN
+3
+DiscountCard 38 1
+ShieldCard
+MoveCard 6
+jing 950 PEN ACTIVE HUMAN
+3
+DemolitionCard
+FreeFromJailCard
+ShieldCard
+alamak jing 
+jing
+28
+GRT street BANK BANK 1 0 0
+TSK street BANK BANK 1 0 0
+GBR railroad BANK BANK 1 0 0
+BGR street BANK BANK 1 0 0
+DPK street alamak OWNED 1 0 0
+BKS street BANK BANK 1 0 0
+MGL street BANK BANK 1 0 0
+PLN utiliy jing OWNED 1 0 0
+SOL street BANK BANK 1 0 0
+YOG street alamak OWNED 1 0 0
+STB railroad BANK BANK 1 0 0
+MAL street BANK BANK 1 0 0
+SMG street BANK BANK 1 0 0
+SBY street BANK BANK 1 0 0
+MKS street alamak OWNED 1 0 0
+BLP street BANK BANK 1 0 0
+MND street BANK BANK 1 0 0
+TUG railroad jing OWNED 1 0 0
+PLB street BANK BANK 1 0 0
+PKB street BANK BANK 1 0 0
+PAM utiliy alamak OWNED 1 0 0
+MED street BANK BANK 1 0 0
+BDG street BANK BANK 1 0 0
+DEN street BANK BANK 1 0 0
+MTR street BANK BANK 1 0 0
+GUB railroad BANK BANK 1 0 0
+JKT street BANK BANK 1 0 0
+IKN street BANK BANK 1 0 0
+10
+MoveCard 5
+MoveCard 6
+LassoCard
+DiscountCard 34 1
+TeleportCard
+TeleportCard
+DiscountCard 29 1
+LassoCard
+DemolitionCard
+FreeFromJailCard
+1
+MoveCard 5
+42
+1 alamak DRAW_SKILL_CARD Mendapat kartu kemampuan: DiscountCard
+1 alamak TURN_START Giliran Turn 1
+1 alamak DADU Berangkat dari tile ke-0 dengan langkah sebesar 8 menuju tile ke-8
+1 alamak DADU Mendarat di DPK (DEPOK)
+1 alamak TURN_START Giliran Turn 1
+1 alamak DADU Berangkat dari tile ke-8 dengan langkah sebesar 6 menuju tile ke-14
+1 alamak DADU Mendarat di YOG (YOGYAKARTA)
+1 alamak TURN_START Giliran Turn 1
+1 alamak JAIL 3x double berturut-turut → masuk penjara
+1 alamak JAIL alamak dimasukkan ke penjara!
+1 jing DRAW_SKILL_CARD Mendapat kartu kemampuan: DemolitionCard
+1 jing TURN_START Giliran Turn 1
+1 jing DADU Berangkat dari tile ke-0 dengan langkah sebesar 12 menuju tile ke-12
+1 jing DADU Mendarat di PLN (PLN)
+1 jing TURN_START Giliran Turn 1
+1 jing DADU Berangkat dari tile ke-12 dengan langkah sebesar 10 menuju tile ke-22
+1 jing DADU Mendarat di KSP (Kesempatan)
+1 jing DADU Berangkat dari tile ke-22 dengan langkah sebesar 3 menuju tile ke-25
+1 jing DADU Mendarat di TUG (STASIUN_TUGU)
+1 jing KARTU Kesempatan: Pergi ke stasiun terdekat.
+2 alamak DRAW_SKILL_CARD Mendapat kartu kemampuan: MoveCard
+2 alamak TURN_START Giliran Turn 2
+2 alamak JAIL Membayar denda M50 untuk keluar penjara
+2 SYSTEM MUAT Game_dimuat_dari_data\okay.txt
+2 alamak DRAW_SKILL_CARD Mendapat kartu kemampuan: ShieldCard
+2 alamak TURN_START Giliran Turn 2
+2 alamak DADU Berangkat dari tile ke-10 dengan langkah sebesar 11 menuju tile ke-21
+2 alamak DADU Mendarat di MKS (MAKASSAR)
+2 jing DRAW_SKILL_CARD Mendapat kartu kemampuan: FreeFromJailCard
+2 jing TURN_START Giliran Turn 2
+2 jing DADU Berangkat dari tile ke-25 dengan langkah sebesar 5 menuju tile ke-30
+2 jing DADU Mendarat di PPJ (Petak_Pergi_ke_Penjara)
+2 jing JAIL jing dimasukkan ke penjara!
+3 alamak DRAW_SKILL_CARD Mendapat kartu kemampuan: MoveCard
+3 alamak TURN_START Giliran Turn 3
+3 alamak DROP_SKILL_CARD Membuang kartu kemampuan: MoveCard
+3 alamak DADU Berangkat dari tile ke-21 dengan langkah sebesar 7 menuju tile ke-28
+3 alamak DADU Mendarat di PAM (PAM)
+3 jing DRAW_SKILL_CARD Mendapat kartu kemampuan: ShieldCard
+3 jing TURN_START Giliran Turn 3
+3 jing JAIL Gagal double 2+6 — tidak bergerak
+3 jing JAIL Membayar denda M50 untuk keluar penjara

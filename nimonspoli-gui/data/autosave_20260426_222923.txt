@@ -1,0 +1,68 @@
+1 15
+2
+ece 900 DPK ACTIVE HUMAN
+1
+ShieldCard
+kocak 850 PPH ACTIVE HUMAN
+1
+FreeFromJailCard
+ece kocak 
+kocak
+28
+GRT street BANK BANK 1 0 0
+TSK street BANK BANK 1 0 0
+GBR railroad BANK BANK 1 0 0
+BGR street BANK BANK 1 0 0
+DPK street ece OWNED 1 0 0
+BKS street BANK BANK 1 0 0
+MGL street BANK BANK 1 0 0
+PLN utiliy BANK BANK 1 0 0
+SOL street BANK BANK 1 0 0
+YOG street BANK BANK 1 0 0
+STB railroad BANK BANK 1 0 0
+MAL street BANK BANK 1 0 0
+SMG street BANK BANK 1 0 0
+SBY street BANK BANK 1 0 0
+MKS street BANK BANK 1 0 0
+BLP street BANK BANK 1 0 0
+MND street BANK BANK 1 0 0
+TUG railroad BANK BANK 1 0 0
+PLB street BANK BANK 1 0 0
+PKB street BANK BANK 1 0 0
+PAM utiliy BANK BANK 1 0 0
+MED street BANK BANK 1 0 0
+BDG street BANK BANK 1 0 0
+DEN street BANK BANK 1 0 0
+MTR street BANK BANK 1 0 0
+GUB railroad BANK BANK 1 0 0
+JKT street BANK BANK 1 0 0
+IKN street BANK BANK 1 0 0
+15
+DiscountCard 38 1
+MoveCard 6
+TeleportCard
+MoveCard 5
+TeleportCard
+DiscountCard 29 1
+ShieldCard
+DemolitionCard
+MoveCard 5
+LassoCard
+DemolitionCard
+DiscountCard 34 1
+LassoCard
+MoveCard 6
+FreeFromJailCard
+0
+11
+1 ece DRAW_SKILL_CARD Mendapat kartu kemampuan: ShieldCard
+1 ece TURN_START Giliran Turn 1
+1 ece DADU Berangkat dari tile ke-0 dengan langkah sebesar 8 menuju tile ke-8
+1 ece DADU Mendarat di DPK (DEPOK)
+1 ece DADU Player mendapatkan dadu1: 3 &  dadu2:5
+1 ece BELI Membeli DEPOK seharga M100
+1 kocak DRAW_SKILL_CARD Mendapat kartu kemampuan: FreeFromJailCard
+1 kocak TURN_START Giliran Turn 1
+1 kocak DADU Berangkat dari tile ke-0 dengan langkah sebesar 2 menuju tile ke-2
+1 kocak DADU Mendarat di PPH (Pajak_Penghasilan)
+1 kocak PAJAK Bayar PPH flat M150

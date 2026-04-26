@@ -1,0 +1,68 @@
+2 15
+2
+lohe 900 BGR ACTIVE HUMAN
+2
+TeleportCard
+DemolitionCard
+kocak 1000 GBR ACTIVE HUMAN
+1
+MoveCard 5
+lohe kocak 
+lohe
+28
+GRT street BANK BANK 1 0 0
+TSK street BANK BANK 1 0 0
+GBR railroad kocak OWNED 1 0 0
+BGR street lohe OWNED 1 0 0
+DPK street BANK BANK 1 0 0
+BKS street BANK BANK 1 0 0
+MGL street BANK BANK 1 0 0
+PLN utiliy BANK BANK 1 0 0
+SOL street BANK BANK 1 0 0
+YOG street BANK BANK 1 0 0
+STB railroad BANK BANK 1 0 0
+MAL street BANK BANK 1 0 0
+SMG street BANK BANK 1 0 0
+SBY street BANK BANK 1 0 0
+MKS street BANK BANK 1 0 0
+BLP street BANK BANK 1 0 0
+MND street BANK BANK 1 0 0
+TUG railroad BANK BANK 1 0 0
+PLB street BANK BANK 1 0 0
+PKB street BANK BANK 1 0 0
+PAM utiliy BANK BANK 1 0 0
+MED street BANK BANK 1 0 0
+BDG street BANK BANK 1 0 0
+DEN street BANK BANK 1 0 0
+MTR street BANK BANK 1 0 0
+GUB railroad BANK BANK 1 0 0
+JKT street BANK BANK 1 0 0
+IKN street BANK BANK 1 0 0
+14
+ShieldCard
+TeleportCard
+LassoCard
+FreeFromJailCard
+MoveCard 5
+DemolitionCard
+DiscountCard 38 1
+MoveCard 6
+MoveCard 6
+ShieldCard
+LassoCard
+DiscountCard 34 1
+FreeFromJailCard
+DiscountCard 29 1
+0
+11
+1 lohe DRAW_SKILL_CARD Mendapat kartu kemampuan: TeleportCard
+1 lohe TURN_START Giliran Turn 1
+1 lohe DADU Berangkat dari tile ke-0 dengan langkah sebesar 6 menuju tile ke-6
+1 lohe DADU Mendarat di BGR (BOGOR)
+1 kocak DRAW_SKILL_CARD Mendapat kartu kemampuan: MoveCard
+1 kocak TURN_START Giliran Turn 1
+1 kocak DADU Berangkat dari tile ke-0 dengan langkah sebesar 5 menuju tile ke-5
+1 kocak DADU Mendarat di GBR (STASIUN_GAMBIR)
+2 lohe DRAW_SKILL_CARD Mendapat kartu kemampuan: DemolitionCard
+2 lohe TURN_START Giliran Turn 2
+2 SYSTEM SIMPAN Game disimpan ke data/cekturnsave.txt
